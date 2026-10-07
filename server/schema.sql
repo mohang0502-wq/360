@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS `portfolio_items` (
   `caption` VARCHAR(255) NOT NULL,
   `before_image` VARCHAR(500) NOT NULL,
   `after_image` VARCHAR(500) NOT NULL,
-  `source_path` VARCHAR(1000) DEFAULT NULL,
+  `source_path` VARCHAR(700) DEFAULT NULL,
   `sort_order` INT DEFAULT 0,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   UNIQUE KEY `portfolio_source_path_unique` (`source_path`),
