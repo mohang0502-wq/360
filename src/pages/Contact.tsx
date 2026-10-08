@@ -211,7 +211,7 @@ export default function Contact() {
       </section>
 
       {/* Free Trial / Quote section */}
-      <section id="trial" className="py-20 bg-off-white scroll-mt-20">
+      <section id="trial" className="hidden py-20 bg-off-white scroll-mt-20">
         <div className="max-w-8xl mx-auto px-6">
           <SectionHeader
             eyebrow="Free Trial"

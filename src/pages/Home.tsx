@@ -128,7 +128,7 @@ const faqs = [
   { q: 'Is my data and imagery secure?', a: 'Absolutely. We treat all client files with strict confidentiality. Your images are never shared or used without your explicit permission.' },
 ];
 
-const brands = ['ZARA', 'Amazon', 'Myntra', 'AJIO', 'IKEA', 'Nykaa', 'Snapdeal'];
+const brands = ['ZARA', 'Amazon', 'Myntra', 'AJIO', 'IKEA', 'Nykaa', 'Snapdeal', 'ZARA', 'Amazon', 'Myntra', 'AJIO', 'IKEA', 'Nykaa', 'Snapdeal'];
 
 const iconMap = {
   Scissors,
@@ -370,7 +370,7 @@ export default function Home() {
       {/* Brand ticker */}
       <section className="bg-slate-primary py-5 overflow-hidden">
         <div className="flex items-center gap-3 mb-2 max-w-8xl mx-auto px-6">
-          <span className="text-xs font-semibold text-white/40 uppercase tracking-widest whitespace-nowrap">Trusted by brands & studios worldwide</span>
+          <span className="text-xs justify-center font-semibold text-white/40 uppercase tracking-widest whitespace-nowrap">Trusted by brands & studios worldwide</span>
         </div>
         <div className="ticker-wrap">
           <div className="ticker-inner">

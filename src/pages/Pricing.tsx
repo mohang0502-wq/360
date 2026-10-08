@@ -12,7 +12,7 @@ export default function Pricing() {
   return (
     <div>
       {/* Banner */}
-      <div className="relative h-56 bg-slate-primary overflow-hidden">
+      <div className="hidden relative h-56 bg-slate-primary overflow-hidden">
         <img src={bannerImages.pricing} alt="Pricing" className="absolute inset-0 w-full h-full object-cover opacity-20" />
         <div className="relative z-10 max-w-8xl mx-auto px-6 h-full flex flex-col justify-center">
           <nav className="flex items-center gap-2 text-xs text-white/40 mb-3">
