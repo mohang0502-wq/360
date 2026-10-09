@@ -11,7 +11,15 @@ if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
 
+const DEFAULT_SECRETS = new Set(['', 'change-this-secret-in-.env', 'change-this-to-a-long-random-string']);
 const JWT_SECRET = process.env.JWT_SECRET || 'change-this-secret-in-.env';
+// Tokens signed with a publicly known secret can be forged, so production refuses to start without a real one.
+if (DEFAULT_SECRETS.has(process.env.JWT_SECRET || '') || JWT_SECRET.length < 32) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('JWT_SECRET must be set to a random string of at least 32 characters in production.');
+  }
+  console.warn('[security] JWT_SECRET is missing or weak — fine for local development, NOT for production.');
+}
 
 export function signToken(user) {
   return jwt.sign({ id: user.id, username: user.username, role: user.role }, JWT_SECRET, { expiresIn: '12h' });
@@ -44,14 +52,25 @@ const storage = multer.diskStorage({
   },
 });
 
-const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml']);
+// MIME type -> allowed extensions. Both must match: the MIME type alone is
+// supplied by the browser and trivially spoofed.
+const ALLOWED_TYPES = {
+  'image/jpeg': ['.jpg', '.jpeg'],
+  'image/png': ['.png'],
+  'image/webp': ['.webp'],
+  'image/avif': ['.avif'],
+  'image/gif': ['.gif'],
+  'image/svg+xml': ['.svg'],
+};
+export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10MB
 
 export const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  limits: { fileSize: MAX_UPLOAD_BYTES, files: 1 },
   fileFilter: (_req, file, cb) => {
-    if (!ALLOWED_TYPES.has(file.mimetype)) {
-      return cb(new Error('Only image files are allowed (jpg, png, webp, gif, svg).'));
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (!ALLOWED_TYPES[file.mimetype]?.includes(ext)) {
+      return cb(new Error('Only image files are allowed (jpg, png, webp, avif, gif, svg).'));
     }
     cb(null, true);
   },

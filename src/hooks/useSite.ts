@@ -24,3 +24,12 @@ export function useSite() {
 
   return site;
 }
+// The WhatsApp setting may hold a full link (https://wa.me/…) or just a phone
+// number ("+91 98765 43210"). Always produce a working wa.me link.
+export function whatsappHref(value: string | null | undefined): string {
+  const v = (value || '').trim();
+  if (!v) return '';
+  if (/^https?:\/\//i.test(v)) return v;
+  const digits = v.replace(/\D/g, '');
+  return digits ? `https://wa.me/${digits}` : '';
+}

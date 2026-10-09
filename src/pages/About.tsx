@@ -1,279 +1,237 @@
+import { useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, CheckCircle, Star } from 'lucide-react';
-import SectionHeader from '../components/SectionHeader';
-import { bannerImages } from '../data/images';
+import { motion, useScroll, useSpring } from 'framer-motion';
+import { ArrowRight, Star, Hand, FileCheck2, ShieldCheck, MessagesSquare, Handshake } from 'lucide-react';
+import {
+  PageHero, Reveal, Stagger, staggerItem, Parallax, ParallaxImage, ClipReveal,
+  Counter, LuxHeading, ScrollProgress, Marquee, CtaBand, SmartImg,
+} from '../components/Premium';
 import { useSections } from '../hooks/useSections';
+import { aboutDefaults } from '../data/pageDefaults';
 
-const aboutFallback = {
-  hero: { title: 'About Us' },
-  story: {
-    eyebrow: 'Who We Are',
-    headingLine1: 'Your Partner in',
-    headingHighlight: 'Image Perfection',
-    paragraph1:
-      '360° Retouching is a professional image editing company delivering high-quality manual retouching and image editing services to clients worldwide. We combine human expertise with modern technology to bring out the best in every image.',
-    paragraph2:
-      'Founded by a team of passionate retouchers and visual creatives, our company was built on the belief that every image deserves expert human attention. We are not an automated service — our work is done by skilled editors who understand light, color, form, and brand requirements.',
-    image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&q=80',
-    stats: [
-      { val: '10+', label: 'Years Experience' },
-      { val: '120+', label: 'Happy Clients' },
-      { val: '25M+', label: 'Images Retouched' },
-      { val: '100%', label: 'Client Satisfaction' },
-    ],
-  },
-  team: [
-    { name: 'Rohit Sharma', role: 'Founder & CEO', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80' },
-    { name: 'Ananya Patel', role: 'Operations Head', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80' },
-    { name: 'Vikram Singh', role: 'Lead Retoucher', img: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&q=80' },
-    { name: 'Neha Varma', role: 'QC Specialist', img: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&q=80' },
-    { name: 'Arjun Das', role: 'Client Success Manager', img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&q=80' },
-  ],
-  testimonials: [
-    {
-      name: 'Rohit Sharma',
-      role: 'E-commerce Manager, IndiaMart',
-      quote: 'The quality, communication and turnaround time are outstanding. 360° Retouching is our go-to partner for all image editing needs.',
-      rating: 5,
-    },
-    {
-      name: 'Priya Mehta',
-      role: 'Creative Director, Fashion Studio',
-      quote: "We've worked with many retouching services but 360° Retouching stands out for their attention to detail and consistency.",
-      rating: 5,
-    },
-  ],
-  statsBanner: [
-    { val: '250+', label: 'Projects Completed' },
-    { val: '120+', label: 'Happy Clients' },
-    { val: '10K+', label: 'Images Retouched Daily' },
-    { val: '4.9/5', label: 'Average Rating' },
-  ],
-};
+const approach = [
+  { icon: Hand, title: 'Manual Editing First', desc: 'Every image is edited by a skilled human editor. We do not rely on automated batch processing for our core work.' },
+  { icon: FileCheck2, title: 'Specification Adherence', desc: 'We follow your exact requirements — style guides, reference images, naming conventions, and file format requirements.' },
+  { icon: ShieldCheck, title: 'Multi-Level Quality Control', desc: 'Images go through multiple internal QC rounds before delivery. Senior editors review every batch.' },
+  { icon: MessagesSquare, title: 'Consistent Communication', desc: 'Regular updates throughout the project. Direct access to your account manager for any questions.' },
+  { icon: Handshake, title: 'Long-Term Partnerships', desc: 'We invest in understanding your brand standards and build a consistent editing style over time.' },
+];
+
+const qualitySteps = [
+  'Editor receives job with full brief and references',
+  'Initial edit completed against specifications',
+  'First internal QC review by senior editor',
+  'Corrections applied based on QC feedback',
+  'Final QC check for consistency and completeness',
+  'Delivery to client with revision window',
+  'Any client feedback addressed promptly',
+];
+
+function QualityTimeline() {
+  const ref = useRef<HTMLOListElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 75%', 'end 60%'] });
+  const scaleY = useSpring(scrollYProgress, { stiffness: 80, damping: 25 });
+  return (
+    <ol ref={ref} className="relative ml-5 space-y-10">
+      <span className="absolute -left-px bottom-2 top-2 w-px bg-hairline" />
+      <motion.span style={{ scaleY }} className="absolute -left-px bottom-2 top-2 w-px origin-top bg-accent-red" />
+      {qualitySteps.map((step, i) => (
+        <Reveal as="li" key={step} delay={i * 0.04} className="relative pl-10">
+          <span className="absolute -left-[13px] top-0 flex h-[26px] w-[26px] items-center justify-center rounded-full border border-hairline bg-white text-[10px] font-bold text-ink">
+            {String(i + 1).padStart(2, '0')}
+          </span>
+          <p className="text-base font-medium leading-snug text-ink">{step}</p>
+        </Reveal>
+      ))}
+    </ol>
+  );
+}
 
 export default function About() {
-  const { sections } = useSections('about', aboutFallback);
+  const { sections } = useSections('about', aboutDefaults);
   const hero = sections.hero;
   const story = sections.story;
   const teamMembers = sections.team;
   const testimonials = sections.testimonials;
   const statsBanner = sections.statsBanner;
+
   return (
-    <div>
-      {/* Banner */}
-      <div className="relative h-56 bg-slate-primary overflow-hidden">
-        <img src={bannerImages.about} alt="About" className="absolute inset-0 w-full h-full object-cover opacity-20" />
-        <div className="relative z-10 max-w-8xl mx-auto px-6 h-full flex flex-col justify-center">
-          <nav className="flex items-center gap-2 text-xs text-white/40 mb-3">
-            <Link to="/" className="hover:text-white/70">Home</Link>
-            <span>/</span>
-            <span className="text-white/70">About Us</span>
-          </nav>
-          <h1 className="text-4xl font-extrabold text-white">{hero.title}</h1>
-        </div>
-      </div>
+    <div className="bg-white">
+      <ScrollProgress />
+      <PageHero
+        crumb={hero.title}
+        eyebrow={story.eyebrow}
+        title={story.headingLine1}
+        highlight={story.headingHighlight}
+        subtitle="A global image editing studio where human craft meets brand-grade consistency."
+        images={hero.images}
+        stats={story.stats.slice(1, 4)}
+      />
 
-      {/* Story */}
-      <section className="py-20 bg-white">
-        <div className="max-w-8xl mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-widest text-slate-400 block mb-3">{story.eyebrow}</span>
-              <h2 className="text-3xl font-extrabold text-slate-primary mb-4">
-                {story.headingLine1}<br />
-                <span className="text-accent-red">{story.headingHighlight}</span>
-              </h2>
-              <p className="text-sm text-slate-500 leading-relaxed mb-4">
-                {story.paragraph1}
-              </p>
-              <p className="text-sm text-slate-500 leading-relaxed mb-6">
-                {story.paragraph2}
-              </p>
-              <div className="grid grid-cols-2 gap-4">
-                {story.stats.map((s: { val: string; label: string }) => (
-                  <div key={s.label} className="text-center p-4 bg-slate-50 rounded-xl border border-slate-100">
-                    <div className="text-2xl font-extrabold text-slate-900">{s.val}</div>
-                    <div className="text-xs text-slate-500 mt-1">{s.label}</div>
-                  </div>
-                ))}
+      {/* ── Story ─────────────────────────────────────────────────────────── */}
+      <section className="bg-white py-16 lg:py-20">
+        <div className="lux-container grid items-center gap-10 lg:grid-cols-12 lg:gap-14">
+          <div className="relative lg:col-span-6">
+            <ClipReveal className="overflow-hidden rounded-[2rem]">
+              <ParallaxImage src={story.image} alt="Our team at work" className="aspect-[4/5] w-full" strength={10} />
+            </ClipReveal>
+            <Parallax offset={50} className="absolute -bottom-10 -right-4 hidden w-56 sm:block lg:-right-10">
+              <div className="rounded-3xl border border-hairline bg-white p-6 shadow-[0_30px_60px_-30px_rgba(17,19,24,0.35)]">
+                <span className="lux-serif text-5xl leading-none text-accent-red">
+                  <Counter value={story.stats[0]?.val ?? '10+'} />
+                </span>
+                <p className="mt-2 text-sm font-semibold text-ink">{story.stats[0]?.label ?? 'Years Experience'}</p>
+                <p className="mt-1 text-xs text-slate-400">of uncompromising craft</p>
               </div>
-            </div>
-            <div className="rounded-2xl overflow-hidden">
-              <img
-                src={story.image}
-                alt="Our team at work"
-                className="w-full h-80 object-cover"
-              />
-            </div>
+            </Parallax>
+          </div>
+          <div className="lg:col-span-6">
+            <Reveal><span className="lux-eyebrow mb-6">Our Story</span></Reveal>
+            <Reveal delay={0.1}>
+              <p className="text-2xl font-medium leading-[1.4] tracking-[-0.015em] text-ink sm:text-3xl">{story.paragraph1}</p>
+            </Reveal>
+            <Reveal delay={0.2}>
+              <p className="mt-6 text-base leading-relaxed text-slate-500">{story.paragraph2}</p>
+            </Reveal>
+            <Stagger className="mt-12 grid grid-cols-2 gap-px overflow-hidden rounded-3xl border border-hairline bg-hairline">
+              {story.stats.map((s: { val: string; label: string }) => (
+                <motion.div key={s.label} variants={staggerItem} className="bg-white p-6">
+                  <Counter value={s.val} className="block text-3xl font-semibold tracking-tight text-ink sm:text-4xl" />
+                  <span className="mt-1 block text-xs text-slate-500">{s.label}</span>
+                </motion.div>
+              ))}
+            </Stagger>
           </div>
         </div>
       </section>
 
-      {/* Team */}
-      <section className="py-20 bg-off-white">
-        <div className="max-w-8xl mx-auto px-6">
-          <SectionHeader
+      {/* ── Values marquee ────────────────────────────────────────────────── */}
+      <section className="border-y border-hairline bg-white py-10">
+        <Marquee items={['Precision', 'Consistency', 'Confidentiality', 'Craftsmanship', 'Partnership', 'Punctuality']} />
+      </section>
+
+      {/* ── Approach ──────────────────────────────────────────────────────── */}
+      <section className="bg-ivory py-16 lg:py-20">
+        <div className="lux-container">
+          <LuxHeading eyebrow="Our Approach" title="Human-led" highlight="production." subtitle="Five principles that shape every image that leaves our studio." className="mb-10" />
+          <Stagger className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-6">
+            {approach.map((item, i) => (
+              <motion.div
+                key={item.title}
+                variants={staggerItem}
+                className={`lux-card group p-8 lg:p-10 ${i < 2 ? 'lg:col-span-3' : 'lg:col-span-2'}`}
+              >
+                <div className="mb-10 flex items-center justify-between">
+                  <span className="flex h-14 w-14 items-center justify-center rounded-2xl border border-hairline bg-ivory text-ink transition-all duration-500 group-hover:border-ink group-hover:bg-ink group-hover:text-white">
+                    <item.icon size={22} strokeWidth={1.6} />
+                  </span>
+                  <span className="lux-serif text-4xl text-slate-200 transition-colors duration-500 group-hover:text-[#C9A96E]">
+                    {String(i + 1).padStart(2, '0')}
+                  </span>
+                </div>
+                <h3 className="text-xl font-semibold text-ink">{item.title}</h3>
+                <p className="mt-3 text-sm leading-relaxed text-slate-500">{item.desc}</p>
+              </motion.div>
+            ))}
+          </Stagger>
+        </div>
+      </section>
+
+      {/* ── Quality process ───────────────────────────────────────────────── */}
+      <section className="bg-white py-16 lg:py-20">
+        <div className="lux-container grid gap-10 lg:grid-cols-12">
+          <div className="lg:sticky lg:top-32 lg:col-span-5 lg:self-start">
+            <LuxHeading
+              eyebrow="Quality Process"
+              title="How we ensure"
+              highlight="quality."
+              subtitle="Seven deliberate checkpoints between your brief and your final files — so nothing is left to chance."
+            />
+          </div>
+          <div className="lg:col-span-6 lg:col-start-7">
+            <QualityTimeline />
+          </div>
+        </div>
+      </section>
+
+      {/* ── Team ──────────────────────────────────────────────────────────── */}
+      <section className="bg-ivory py-16 lg:py-20">
+        <div className="lux-container">
+          <LuxHeading
             eyebrow="Our Team"
-            title="Experts Behind "
-            highlight="Your Images"
-            subtitle="Our skilled retouchers, designers and AI specialists work dedicatedly to deliver outstanding results every time."
+            title="The experts behind"
+            highlight="your images."
+            subtitle="Skilled retouchers, designers and AI specialists dedicated to outstanding results every time."
+            align="center"
+            className="mb-10"
           />
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
+          <Stagger className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
             {teamMembers.map((member: { name: string; role: string; img: string }) => (
-              <div key={member.name} className="text-center">
-                <div className="w-20 h-20 rounded-full overflow-hidden mx-auto mb-3">
-                  <img src={member.img} alt={member.name} className="w-full h-full object-cover" />
+              <motion.div key={member.name} variants={staggerItem} className="group">
+                <div className="lux-img-zoom relative mb-5 aspect-[3/4] overflow-hidden rounded-[1.5rem] bg-sand">
+                  <SmartImg
+                    src={member.img}
+                    alt={member.name}
+                    className="absolute inset-0 h-full w-full object-cover grayscale transition-[filter] duration-700 group-hover:grayscale-0"
+                    loading="lazy"
+                  />
                 </div>
-                <h4 className="text-sm font-bold text-slate-800">{member.name}</h4>
-                <p className="text-xs text-slate-500 mt-0.5">{member.role}</p>
-              </div>
+                <h4 className="text-base font-semibold text-ink">{member.name}</h4>
+                <p className="mt-0.5 text-xs text-slate-500">{member.role}</p>
+              </motion.div>
+            ))}
+          </Stagger>
+        </div>
+      </section>
+
+      {/* ── Testimonials ──────────────────────────────────────────────────── */}
+      <section className="bg-white py-16 lg:py-20">
+        <div className="lux-container">
+          <LuxHeading eyebrow="Testimonials" title="What our clients" highlight="say." align="center" className="mb-10" />
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            {testimonials.map((t: { name: string; role: string; quote: string; rating: number }, i: number) => (
+              <Reveal key={t.name} delay={i * 0.1}>
+                <figure className="lux-card flex h-full flex-col p-10">
+                  <div className="mb-6 flex gap-0.5">
+                    {Array.from({ length: t.rating }).map((_, k) => (
+                      <Star key={k} size={14} className="fill-[#C9A96E] text-[#C9A96E]" />
+                    ))}
+                  </div>
+                  <blockquote className="lux-serif flex-1 text-2xl leading-[1.35] text-ink sm:text-[1.75rem]">“{t.quote}”</blockquote>
+                  <figcaption className="mt-8 flex items-center gap-4 border-t border-hairline pt-6">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-ink text-sm font-semibold text-white">{t.name[0]}</span>
+                    <span>
+                      <span className="block text-sm font-semibold text-ink">{t.name}</span>
+                      <span className="block text-xs text-slate-500">{t.role}</span>
+                    </span>
+                  </figcaption>
+                </figure>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Approach */}
-      <section className="py-20 bg-white">
-        <div className="max-w-8xl mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            <div>
-              <SectionHeader
-                eyebrow="Our Approach"
-                title="Human-Led "
-                highlight="Production"
-                centered={false}
-              />
-              <div className="space-y-4">
-                {[
-                  {
-                    title: 'Manual Editing First',
-                    desc: 'Every image is edited by a skilled human editor. We do not rely on automated batch processing for our core work.',
-                  },
-                  {
-                    title: 'Client Specification Adherence',
-                    desc: 'We follow your exact requirements — style guides, reference images, naming conventions, and file format requirements.',
-                  },
-                  {
-                    title: 'Multi-Level Quality Control',
-                    desc: 'Images go through multiple internal QC rounds before delivery. Senior editors review every batch.',
-                  },
-                  {
-                    title: 'Consistent Communication',
-                    desc: 'Regular updates throughout the project. Direct access to your account manager for any questions.',
-                  },
-                  {
-                    title: 'Long-Term Partnerships',
-                    desc: 'We invest in understanding your brand standards and build consistent editing style over time.',
-                  },
-                ].map((item) => (
-                  <div key={item.title} className="flex items-start gap-3">
-                    <CheckCircle size={16} className="text-slate-500 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm font-bold text-slate-800">{item.title}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{item.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div>
-              <SectionHeader
-                eyebrow="Quality Process"
-                title="How We Ensure "
-                highlight="Quality"
-                centered={false}
-              />
-              <div className="space-y-3">
-                {[
-                  '01 · Editor receives job with full brief and references',
-                  '02 · Initial edit completed against specifications',
-                  '03 · First internal QC review by senior editor',
-                  '04 · Corrections applied based on QC feedback',
-                  '05 · Final QC check for consistency and completeness',
-                  '06 · Delivery to client with revision window',
-                  '07 · Any client feedback addressed promptly',
-                ].map((step) => (
-                  <div key={step} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100">
-                    <span className="text-xs text-slate-500">{step}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="py-20 bg-off-white">
-        <div className="max-w-8xl mx-auto px-6">
-          <SectionHeader
-            eyebrow="Testimonials"
-            title="What Our Clients "
-            highlight="Say"
-            subtitle="Placeholder testimonials — to be replaced with verified client reviews."
-          />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            {testimonials.map((t: { name: string; role: string; quote: string; rating: number }) => (
-              <div key={t.name} className="bg-white rounded-xl p-6 border border-slate-100">
-                <div className="flex gap-0.5 mb-4">
-                  {Array.from({ length: t.rating }).map((_, i) => (
-                    <Star key={i} size={13} className="fill-amber-400 text-amber-400" />
-                  ))}
-                </div>
-                <p className="text-sm text-slate-600 leading-relaxed mb-5 italic">"{t.quote}"</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 bg-slate-200 rounded-full flex items-center justify-center text-xs font-bold text-slate-600">
-                    {t.name[0]}
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-800">{t.name}</p>
-                    <p className="text-xs text-slate-500">{t.role}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <p className="text-xs text-slate-400 text-center italic">
-            * Testimonial content is placeholder text and will be replaced with verified client reviews.
-          </p>
-        </div>
-      </section>
-
-      {/* Stats banner */}
-      <section className="py-12 bg-slate-primary">
-        <div className="max-w-8xl mx-auto px-6">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      {/* ── Stats ─────────────────────────────────────────────────────────── */}
+      <section className="bg-white pb-4">
+        <div className="lux-container">
+          <Stagger className="grid grid-cols-2 gap-px overflow-hidden rounded-[2rem] border border-hairline bg-hairline lg:grid-cols-4">
             {statsBanner.map((s: { val: string; label: string }) => (
-              <div key={s.label} className="text-center py-4">
-                <div className="text-3xl font-extrabold text-white">{s.val}</div>
-                <div className="text-xs text-white/50 mt-1">{s.label}</div>
-              </div>
+              <motion.div key={s.label} variants={staggerItem} className="bg-ivory px-6 py-12 text-center">
+                <Counter value={s.val} className="lux-serif block text-5xl text-ink sm:text-6xl" />
+                <span className="mt-3 block text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">{s.label}</span>
+              </motion.div>
             ))}
-          </div>
+          </Stagger>
+          <Reveal className="mt-10 text-center">
+            <Link to="/portfolio" className="inline-flex items-center gap-2 text-sm font-semibold text-ink underline decoration-accent-red underline-offset-[6px]">
+              See our work <ArrowRight size={14} />
+            </Link>
+          </Reveal>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-16 bg-white">
-        <div className="max-w-xl mx-auto px-6 text-center">
-          <h3 className="text-2xl font-extrabold text-slate-primary mb-3">Ready to Work Together?</h3>
-          <p className="text-sm text-slate-500 mb-6">Start with a free sample edit and see the quality for yourself.</p>
-          <div className="flex flex-wrap gap-3 justify-center">
-            <Link
-              to="/contact#trial"
-              className="inline-flex items-center gap-2 bg-accent-red hover:bg-accent-red-hover text-white font-bold px-6 py-3 rounded-lg transition-colors text-sm"
-            >
-              Get a Free Trial <ArrowRight size={15} />
-            </Link>
-            <Link
-              to="/contact"
-              className="inline-flex items-center gap-2 text-sm font-bold text-slate-700 border border-slate-200 hover:border-slate-800 px-6 py-3 rounded-lg transition-colors"
-            >
-              Contact Us
-            </Link>
-          </div>
-        </div>
-      </section>
+      <CtaBand title="Ready to work" highlight="together?" subtitle="Start with a free sample edit and see the quality for yourself." />
     </div>
   );
 }

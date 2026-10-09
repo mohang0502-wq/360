@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
-  FileText, Grid2x2, Home, Image as ImageIcon, Info, LayoutGrid, LogOut, Mail,
-  Lock, Percent, Plus, Save, Tag, Trash2, Upload, X, ChevronDown, Eye, Pencil,
+  FileText, Grid2x2, Image as ImageIcon, LayoutGrid, LogOut, Mail,
+  Lock, Plus, Save, Tag, Trash2, Upload, X, ChevronDown, Eye, Pencil,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -9,17 +9,11 @@ import {
   getCategories, createCategory, updateCategory, deleteCategory,
   getPortfolio, createPortfolioItem, updatePortfolioItem, deletePortfolioItem,
   getServices, createService, updateService, deleteService,
-  getMedia, uploadImage, deleteMedia, API_BASE, getContactSubmissions, updateContactSubmission,
+  getMedia, uploadImage, deleteMedia, deleteSection, getContactSubmissions, updateContactSubmission,
+  uploadImageWithProgress, validateImageFile, IMAGE_UPLOAD_RULES,
   type SiteSettings, type Category, type PortfolioItem, type ServiceItem, type PageSection, type ContactSubmission,
 } from '../../services/cmsService';
-
-const PAGES = [
-  { key: 'home', label: 'Home', icon: Home },
-  { key: 'about', label: 'About', icon: Info },
-  { key: 'services', label: 'Services', icon: Grid2x2 },
-  { key: 'pricing', label: 'Pricing', icon: Percent },
-  { key: 'contact', label: 'Contact', icon: Mail },
-];
+import { PAGE_REGISTRY } from '../../data/pageDefaults';
 
 const TABS = [
   { key: 'site', label: 'Settings', icon: LayoutGrid },
@@ -52,19 +46,22 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-slate-100">
-      <div className="flex">
-        <aside className="relative min-h-screen w-64 shrink-0 bg-slate-900 text-white">
-          <div className="flex items-center gap-3 border-b border-slate-800 px-5 py-5">
-            <img src="/images/360.png" alt="" />
+      <div className="flex flex-col lg:flex-row">
+        <aside className="relative w-full shrink-0 bg-slate-900 text-white lg:min-h-screen lg:w-64">
+          <div className="flex items-center justify-between gap-3 border-b border-slate-800 px-4 py-3 lg:px-5 lg:py-5">
+            <img src="/images/360.png" alt="360° Retouching" className="h-10 w-auto lg:h-auto" />
+            <button onClick={handleLogout} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-300 hover:bg-slate-800 lg:hidden">
+              <LogOut size={16} /> Logout
+            </button>
           </div>
-          <nav className="p-3">
+          <nav className="flex gap-1 overflow-x-auto p-2 lg:block lg:p-3">
             {TABS.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`mb-1 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
+                  className={`flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2.5 text-sm font-medium transition lg:mb-1 lg:w-full lg:gap-3 ${
                     activeTab === tab.key ? 'bg-white text-slate-900' : 'text-slate-300 hover:bg-slate-800'
                   }`}
                 >
@@ -74,14 +71,14 @@ export default function AdminDashboard() {
               );
             })}
           </nav>
-          <div className="absolute bottom-0 w-64 border-t border-slate-800 p-3">
+          <div className="absolute bottom-0 hidden w-64 border-t border-slate-800 p-3 lg:block">
             <button onClick={handleLogout} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-slate-800">
               <LogOut size={17} /> Logout
             </button>
           </div>
         </aside>
 
-        <main className="flex-1 p-8">
+        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">
           {toast && (
             <div className="fixed right-6 top-6 z-50 rounded-lg bg-slate-900 px-4 py-3 text-sm font-medium text-white shadow-xl">
               {toast}
@@ -132,13 +129,13 @@ function TextField({ label, value, onChange, textarea, type = 'text' }: { label:
       {textarea ? (
         <textarea
           value={value ?? ''}
-          type={type}
           onChange={(e) => onChange(e.target.value)}
           rows={3}
           className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-slate-400"
         />
       ) : (
         <input
+          type={type}
           value={value ?? ''}
           onChange={(e) => onChange(e.target.value)}
           className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-slate-400"
@@ -148,51 +145,148 @@ function TextField({ label, value, onChange, textarea, type = 'text' }: { label:
   );
 }
 
-// Image field: shows a preview + upload button. Uploading swaps the URL in place.
-function ImageField({ label, value, onChange }: { label: string; value: string; onChange: (url: string) => void }) {
-  const [busy, setBusy] = useState(false);
+// Recommended sizes shown next to image fields, matched on the field path.
+function imageHint(path: string): string {
+  const p = path.toLowerCase();
+  if (/hero\.images\.0|banner|statement|beforeimage|afterimage/.test(p)) return 'Recommended 1600×1200px or larger · landscape';
+  if (/hero\.images/.test(p)) return 'Recommended 800×1000px · portrait';
+  if (/avatar/.test(p)) return 'Recommended 200×200px · square';
+  if (/team|thumbnail|portfoliocategories|aiservices|detailimage/.test(p)) return 'Recommended 900×1200px · portrait';
+  return 'Recommended 1200×900px · JPG or WebP under 1 MB';
+}
+
+// Media picker: reuse an already-uploaded image instead of uploading a duplicate.
+function MediaPicker({ onPick, onClose }: { onPick: (url: string) => void; onClose: () => void }) {
+  const [media, setMedia] = useState<any[] | null>(null);
+  useEffect(() => { getMedia().then(setMedia).catch(() => setMedia([])); }, []);
+  return (
+    <Modal title="Choose from Media Library" onClose={onClose}>
+      {media === null ? (
+        <p className="text-sm text-slate-400">Loading…</p>
+      ) : media.length === 0 ? (
+        <p className="text-sm text-slate-400">No uploaded images yet.</p>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {media.map((m) => (
+            <button
+              key={m.id}
+              onClick={() => { onPick(m.url); onClose(); }}
+              className="group overflow-hidden rounded-lg border border-slate-200 text-left hover:border-slate-900"
+            >
+              <img src={m.url} alt={m.alt_text || ''} className="h-24 w-full object-cover" />
+              <p className="truncate px-2 py-1 text-[11px] text-slate-500 group-hover:text-slate-900">{m.original_name || m.filename}</p>
+            </button>
+          ))}
+        </div>
+      )}
+    </Modal>
+  );
+}
+
+// Image field: preview, drag-and-drop / click upload with progress, client
+// validation, replace, reuse from the media library, and remove (confirmed).
+function ImageField({ label, value, onChange, path = '' }: { label: string; value: string; onChange: (url: string) => void; path?: string }) {
+  const [progress, setProgress] = useState<number | null>(null);
+  const [error, setError] = useState('');
+  const [dragOver, setDragOver] = useState(false);
+  const [picking, setPicking] = useState(false);
+  const [previewFailed, setPreviewFailed] = useState(false);
+  useEffect(() => setPreviewFailed(false), [value]);
 
   const handleFile = async (file: File | undefined) => {
     if (!file) return;
-    setBusy(true);
+    const problem = validateImageFile(file);
+    if (problem) { setError(problem); return; }
+    setError('');
+    setProgress(0);
     try {
-      const { url } = await uploadImage(file);
+      const { url } = await uploadImageWithProgress(file, label, setProgress);
       onChange(url);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Upload failed');
+      setError(err instanceof Error ? err.message : 'Upload failed');
     } finally {
-      setBusy(false);
+      setProgress(null);
     }
+  };
+
+  const remove = () => {
+    if (value && window.confirm('Remove this image from the section? (The file stays in the Media Library.)')) onChange('');
   };
 
   return (
     <div className="mb-3">
-      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</label>
-      <div className="flex items-center gap-3">
-        {value ? (
-          <img src={value} alt="" className="h-16 w-16 rounded-lg object-cover ring-1 ring-slate-200" />
-        ) : (
-          <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-slate-100 text-slate-400"><ImageIcon size={20} /></div>
-        )}
-        <input value={value ?? ''} onChange={(e) => onChange(e.target.value)} placeholder="Image URL" className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-slate-400" />
-        <label className="flex cursor-pointer items-center gap-1 rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50">
-          <Upload size={14} /> {busy ? 'Uploading…' : 'Upload'}
-          <input type="file" accept="image/*" hidden onChange={(e) => handleFile(e.target.files?.[0])} />
-        </label>
+      {label && <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</label>}
+      <div
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files?.[0]); }}
+        className={`flex flex-col gap-3 rounded-xl border-2 border-dashed p-3 transition sm:flex-row sm:items-center ${dragOver ? 'border-slate-900 bg-slate-100' : 'border-slate-200 bg-white'}`}
+      >
+        <div className="relative h-28 w-full flex-shrink-0 overflow-hidden rounded-lg bg-slate-100 ring-1 ring-slate-200 sm:h-24 sm:w-32">
+          {value && !previewFailed ? (
+            <img src={value} alt="" onError={() => setPreviewFailed(true)} className="h-full w-full object-cover" />
+          ) : (
+            <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-slate-400">
+              <ImageIcon size={20} />
+              <span className="text-[10px]">{value ? 'Not reachable' : 'No image'}</span>
+            </div>
+          )}
+          {progress !== null && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/85 text-xs font-semibold text-slate-700">
+              {progress}%
+              <div className="mt-1 h-1 w-3/4 overflow-hidden rounded-full bg-slate-200">
+                <div className="h-full bg-slate-900 transition-all" style={{ width: `${progress}%` }} />
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="min-w-0 flex-1 space-y-2">
+          <input
+            value={value ?? ''}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="Drop an image here, upload, or paste a URL"
+            className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-slate-400"
+          />
+          <div className="flex flex-wrap gap-2">
+            <label className="flex cursor-pointer items-center gap-1 rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700">
+              <Upload size={13} /> {value ? 'Replace' : 'Upload'}
+              <input type="file" accept={IMAGE_UPLOAD_RULES.accept} hidden onChange={(e) => { handleFile(e.target.files?.[0]); e.target.value = ''; }} />
+            </label>
+            <button type="button" onClick={() => setPicking(true)} className="flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50">
+              <ImageIcon size={13} /> Library
+            </button>
+            {value && (
+              <>
+                <a href={value} target="_blank" rel="noreferrer" className="flex items-center gap-1 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50">
+                  <Eye size={13} /> View
+                </a>
+                <button type="button" onClick={remove} className="flex items-center gap-1 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50">
+                  <Trash2 size={13} /> Remove
+                </button>
+              </>
+            )}
+          </div>
+          <p className="text-[11px] text-slate-400">{imageHint(path || label)} · max 10 MB</p>
+          {error && <p className="text-xs font-medium text-red-600">{error}</p>}
+        </div>
       </div>
+      {picking && <MediaPicker onPick={onChange} onClose={() => setPicking(false)} />}
     </div>
   );
 }
 
-const isImageKey = (key: string) => /image|img|photo|icon|before|after|thumbnail|src/i.test(key);
+const IMAGE_KEY_RE = /image|img|photo|thumbnail|src|before|after|logo|banner|avatar/i;
+const NON_IMAGE_KEY_RE = /alt$|label|caption|title|desc|name/i;
+const looksLikeImageValue = (v: string) => v === '' || /^(https?:\/\/|\/|data:image)/i.test(v);
+const isImageField = (key: string, val: unknown) =>
+  typeof val === 'string' && IMAGE_KEY_RE.test(key) && !NON_IMAGE_KEY_RE.test(key) && looksLikeImageValue(val);
 
 /* --------------------------- generic JSON section editor --------------------------- */
 // Renders ANY section's content_json as an editable form: strings, image
 // fields, arrays of strings, and arrays/objects nested arbitrarily deep.
-// This is what makes every section on every page editable without custom
-// UI per page.
+// Array items can be added, removed and reordered (image galleries included).
 
-function JsonEditor({ value, onChange }: { value: any; onChange: (v: any) => void }) {
+function JsonEditor({ value, onChange, path = '' }: { value: any; onChange: (v: any) => void; path?: string }) {
   if (value === null || value === undefined) {
     return <TextField label="value" value="" onChange={onChange} />;
   }
@@ -215,12 +309,27 @@ function JsonEditor({ value, onChange }: { value: any; onChange: (v: any) => voi
   }
 
   if (Array.isArray(value)) {
+    const move = (from: number, to: number) => {
+      if (to < 0 || to >= value.length) return;
+      const next = [...value];
+      const [item] = next.splice(from, 1);
+      next.splice(to, 0, item);
+      onChange(next);
+    };
+    const blank = (sample: any): any => {
+      if (typeof sample === 'string') return '';
+      if (Array.isArray(sample)) return [];
+      if (sample && typeof sample === 'object') return Object.fromEntries(Object.keys(sample).map((k) => [k, blank(sample[k])]));
+      return sample ?? '';
+    };
     return (
-      <div className="space-y-2 rounded-lg border border-dashed border-slate-300 p-3">
+      <div className="space-y-2 rounded-lg border border-dashed border-slate-300 p-2 sm:p-3">
         {value.map((item, i) => (
           <div key={i} className="flex items-start gap-2 rounded-lg bg-slate-50 p-2">
-            <div className="flex-1">
+            <span className="mt-2 w-5 flex-shrink-0 text-center text-[11px] font-bold text-slate-400">{i + 1}</span>
+            <div className="min-w-0 flex-1">
               <JsonEditor
+                path={`${path}.${i}`}
                 value={item}
                 onChange={(v) => {
                   const next = [...value];
@@ -229,13 +338,27 @@ function JsonEditor({ value, onChange }: { value: any; onChange: (v: any) => voi
                 }}
               />
             </div>
-            <button onClick={() => onChange(value.filter((_: any, idx: number) => idx !== i))} className="mt-1 text-slate-400 hover:text-red-600">
-              <X size={16} />
-            </button>
+            <div className="flex flex-col gap-1">
+              <button type="button" disabled={i === 0} onClick={() => move(i, i - 1)} aria-label="Move up" className="rounded p-1 text-slate-400 hover:bg-white hover:text-slate-900 disabled:opacity-30">
+                <ChevronDown size={15} className="rotate-180" />
+              </button>
+              <button type="button" disabled={i === value.length - 1} onClick={() => move(i, i + 1)} aria-label="Move down" className="rounded p-1 text-slate-400 hover:bg-white hover:text-slate-900 disabled:opacity-30">
+                <ChevronDown size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={() => { if (window.confirm('Remove this item?')) onChange(value.filter((_: any, idx: number) => idx !== i)); }}
+                aria-label="Remove item"
+                className="rounded p-1 text-slate-400 hover:bg-white hover:text-red-600"
+              >
+                <X size={15} />
+              </button>
+            </div>
           </div>
         ))}
         <button
-          onClick={() => onChange([...value, typeof value[0] === 'object' && value[0] !== null ? {} : ''])}
+          type="button"
+          onClick={() => onChange([...value, blank(value[0] ?? '')])}
           className="flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-900"
         >
           <Plus size={14} /> Add item
@@ -246,15 +369,15 @@ function JsonEditor({ value, onChange }: { value: any; onChange: (v: any) => voi
 
   if (typeof value === 'object') {
     return (
-      <div className="space-y-3 rounded-lg border border-slate-200 p-3">
+      <div className="space-y-3 rounded-lg border border-slate-200 p-2 sm:p-3">
         {Object.entries(value).map(([key, val]) => (
           <div key={key}>
-            {isImageKey(key) && typeof val === 'string' ? (
-              <ImageField label={key} value={val} onChange={(v) => onChange({ ...value, [key]: v })} />
+            {isImageField(key, val) ? (
+              <ImageField label={key} path={`${path}.${key}`} value={val as string} onChange={(v) => onChange({ ...value, [key]: v })} />
             ) : (
               <div className="mb-1">
                 <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">{key}</label>
-                <JsonEditor value={val} onChange={(v) => onChange({ ...value, [key]: v })} />
+                <JsonEditor path={`${path}.${key}`} value={val} onChange={(v) => onChange({ ...value, [key]: v })} />
               </div>
             )}
           </div>
@@ -266,86 +389,164 @@ function JsonEditor({ value, onChange }: { value: any; onChange: (v: any) => voi
   return null;
 }
 
+// Count image slots in a section so admins can spot image-bearing sections.
+function countImages(value: any, key = ''): number {
+  if (typeof value === 'string') return isImageField(key, value) ? 1 : 0;
+  if (Array.isArray(value)) return value.reduce((n, v) => n + countImages(v, key), 0);
+  if (value && typeof value === 'object') return Object.entries(value).reduce((n, [k, v]) => n + countImages(v, k), 0);
+  return 0;
+}
+
+type EditableSection = { section_key: string; content_json: any; title: string | null; saved: boolean; dirty: boolean };
+
 function SectionsTab({ notify }: { notify: (m: string) => void }) {
-  const [page, setPage] = useState('home');
-  const [sections, setSections] = useState<PageSection[]>([]);
+  const pageKeys = Object.keys(PAGE_REGISTRY);
+  const [page, setPage] = useState(pageKeys[0]);
+  const [sections, setSections] = useState<EditableSection[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState('');
   const [newSectionKey, setNewSectionKey] = useState('');
 
-  useEffect(() => {
+  // Merge saved rows with registry defaults so every section — saved or not —
+  // is editable. Saved object sections are layered over their defaults so new
+  // image slots appear even on sections saved before they existed.
+  const load = async (pageKey: string) => {
     setLoading(true);
-    getPageSections(page).then(setSections).finally(() => setLoading(false));
-  }, [page]);
-
-  const updateLocal = (sectionKey: string, content: any) => {
-    setSections((prev) => prev.map((s) => (s.section_key === sectionKey ? { ...s, content_json: content } : s)));
+    const defaults = PAGE_REGISTRY[pageKey]?.defaults ?? {};
+    let rows: PageSection[] = [];
+    try { rows = await getPageSections(pageKey); } catch (err) { notify(err instanceof Error ? err.message : 'Failed to load sections'); }
+    const byKey = new Map(rows.map((r) => [r.section_key, r]));
+    const keys = [...Object.keys(defaults), ...rows.map((r) => r.section_key).filter((k) => !(k in defaults))];
+    setSections(keys.map((key) => {
+      const row = byKey.get(key);
+      const base = defaults[key];
+      const content = row
+        ? (base && typeof base === 'object' && !Array.isArray(base) && row.content_json && typeof row.content_json === 'object' && !Array.isArray(row.content_json)
+            ? { ...base, ...row.content_json }
+            : row.content_json)
+        : structuredClone(base);
+      return { section_key: key, content_json: content, title: row?.title ?? null, saved: Boolean(row), dirty: false };
+    }));
+    setLoading(false);
   };
 
-  const save = async (section: PageSection) => {
-    await saveSection(page, section.section_key, section.content_json, section.title || undefined);
-    notify(`Saved "${section.section_key}" on ${page}`);
+  useEffect(() => { load(page); }, [page]);
+
+  const updateLocal = (sectionKey: string, content: any) => {
+    setSections((prev) => prev.map((s) => (s.section_key === sectionKey ? { ...s, content_json: content, dirty: true } : s)));
+  };
+
+  const save = async (section: EditableSection) => {
+    setSaving(section.section_key);
+    try {
+      await saveSection(page, section.section_key, section.content_json, section.title || undefined);
+      setSections((prev) => prev.map((s) => (s.section_key === section.section_key ? { ...s, saved: true, dirty: false } : s)));
+      notify(`Published "${section.section_key}" on ${PAGE_REGISTRY[page]?.label ?? page}`);
+    } catch (err) {
+      notify(err instanceof Error ? err.message : 'Save failed');
+    } finally {
+      setSaving('');
+    }
+  };
+
+  const reset = async (section: EditableSection) => {
+    if (!window.confirm(`Reset "${section.section_key}" to its default content? Saved changes for this section will be removed.`)) return;
+    try {
+      await deleteSection(page, section.section_key);
+      notify(`Reset "${section.section_key}" to default`);
+      load(page);
+    } catch (err) {
+      notify(err instanceof Error ? err.message : 'Reset failed');
+    }
   };
 
   const addSection = async () => {
-    if (!newSectionKey.trim()) return;
-    await saveSection(page, newSectionKey.trim(), {});
+    const key = newSectionKey.trim();
+    if (!key) return;
+    await saveSection(page, key, {});
     setNewSectionKey('');
-    const rows = await getPageSections(page);
-    setSections(rows);
+    load(page);
   };
+
+  const registry = PAGE_REGISTRY[page];
 
   return (
     <div>
       <h1 className="mb-1 text-2xl font-extrabold text-slate-900">Page Sections</h1>
-      <p className="mb-6 text-sm text-slate-500">Every block of copy and images on the public site, editable here — no code changes needed.</p>
+      <p className="mb-6 text-sm text-slate-500">Every block of copy and every image on the public site, editable here — no code changes needed. Changes go live when you press Publish.</p>
 
-      <div className="mb-6 flex flex-wrap gap-2">
-        {PAGES.map((p) => {
-          const Icon = p.icon;
-          return (
-            <button
-              key={p.key}
-              onClick={() => setPage(p.key)}
-              className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition ${
-                page === p.key ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              <Icon size={15} /> {p.label}
-            </button>
-          );
-        })}
+      <div className="-mx-1 mb-6 flex gap-2 overflow-x-auto px-1 pb-1 sm:flex-wrap sm:overflow-visible">
+        {pageKeys.map((key) => (
+          <button
+            key={key}
+            onClick={() => setPage(key)}
+            className={`flex flex-shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-semibold transition ${
+              page === key ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50'
+            }`}
+          >
+            {PAGE_REGISTRY[key].label}
+          </button>
+        ))}
       </div>
+
+      {registry && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+          <span>{sections.length} sections · {sections.reduce((n, s) => n + countImages(s.content_json), 0)} image slots</span>
+          <a href={registry.route} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold text-slate-700 hover:text-slate-900">
+            <Eye size={13} /> View {registry.label} page
+          </a>
+        </div>
+      )}
 
       {loading ? (
         <p className="text-sm text-slate-400">Loading…</p>
       ) : (
         <>
-          {sections.length === 0 && <p className="mb-4 text-sm text-slate-400">No sections yet for "{page}". Add one below.</p>}
           <div className="space-y-3">
-            {sections.map((section) => (
-              <details key={section.section_key} className="group rounded-xl border border-slate-200 bg-white shadow-sm">
-                <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 text-sm font-bold text-slate-900">
-                  <span>{section.section_key}</span><ChevronDown size={17} className="transition-transform group-open:rotate-180" />
-                </summary>
-                <div className="border-t border-slate-100 p-5">
-                  <JsonEditor value={section.content_json} onChange={(v) => updateLocal(section.section_key, v)} />
-                  <button onClick={() => save(section)} className="mt-4 flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">
-                    <Save size={15} /> Save {section.section_key}
-                  </button>
-                </div>
-              </details>
-            ))}
+            {sections.map((section) => {
+              const images = countImages(section.content_json);
+              return (
+                <details key={section.section_key} className="group rounded-xl border border-slate-200 bg-white shadow-sm">
+                  <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 px-4 py-4 text-sm font-bold text-slate-900 sm:px-5">
+                    <span className="flex flex-wrap items-center gap-2">
+                      {section.section_key}
+                      {images > 0 && <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600"><ImageIcon size={11} /> {images}</span>}
+                      {!section.saved && <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-700">Default content</span>}
+                      {section.dirty && <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700">Unpublished changes</span>}
+                    </span>
+                    <ChevronDown size={17} className="transition-transform group-open:rotate-180" />
+                  </summary>
+                  <div className="border-t border-slate-100 p-3 sm:p-5">
+                    <JsonEditor path={section.section_key} value={section.content_json} onChange={(v) => updateLocal(section.section_key, v)} />
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <button
+                        onClick={() => save(section)}
+                        disabled={saving === section.section_key}
+                        className="flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 disabled:opacity-60"
+                      >
+                        <Save size={15} /> {saving === section.section_key ? 'Publishing…' : `Publish ${section.section_key}`}
+                      </button>
+                      {section.saved && section.section_key in (registry?.defaults ?? {}) && (
+                        <button onClick={() => reset(section)} className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50">
+                          Reset to default
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </details>
+              );
+            })}
           </div>
 
           <Card title="Add new section">
-            <div className="flex gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row">
               <input
                 value={newSectionKey}
                 onChange={(e) => setNewSectionKey(e.target.value)}
                 placeholder="section key e.g. faq, testimonials"
                 className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
               />
-              <button onClick={addSection} className="flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">
+              <button onClick={addSection} className="flex items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">
                 <Plus size={15} /> Add
               </button>
             </div>
@@ -482,11 +683,6 @@ function CategoriesTab({ notify }: { notify: (m: string) => void }) {
     await deleteCategory(id);
     refresh();
     notify('Category deleted');
-  };
-
-  const rename = async (cat: Category, newName: string) => {
-    await updateCategory(cat.id, { ...cat, name: newName });
-    refresh();
   };
 
   return (
@@ -713,6 +909,8 @@ function MediaTab({ notify }: { notify: (m: string) => void }) {
 
   const handleUpload = async (file: File | undefined) => {
     if (!file) return;
+    const problem = validateImageFile(file);
+    if (problem) { alert(problem); return; }
     setUploading(true);
     try {
       await uploadImage(file);
@@ -726,8 +924,19 @@ function MediaTab({ notify }: { notify: (m: string) => void }) {
   };
 
   const remove = async (id: number) => {
-    if (!confirm('Delete this image? It will stop showing anywhere it is used.')) return;
-    await deleteMedia(id);
+    if (!confirm('Delete this image permanently?')) return;
+    try {
+      await deleteMedia(id);
+    } catch (err) {
+      // 409: still referenced by a page section, service, portfolio item or settings
+      const message = err instanceof Error ? err.message : 'Delete failed';
+      const inUse = message.startsWith('Image is still used');
+      if (!inUse) { alert(message); return; }
+      if (!confirm(`${message}
+
+Delete anyway? Those places will show a placeholder until a new image is chosen.`)) return;
+      await deleteMedia(id, true);
+    }
     refresh();
     notify('Image deleted');
   };
@@ -740,16 +949,16 @@ function MediaTab({ notify }: { notify: (m: string) => void }) {
       <Card>
         <label className="flex w-fit cursor-pointer items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">
           <Upload size={15} /> {uploading ? 'Uploading…' : 'Upload image'}
-          <input type="file" accept="image/*" hidden onChange={(e) => handleUpload(e.target.files?.[0])} />
+          <input type="file" accept={IMAGE_UPLOAD_RULES.accept} hidden onChange={(e) => { handleUpload(e.target.files?.[0]); e.target.value = ''; }} />
         </label>
       </Card>
 
       <Card title={`${media.length} images`}>
-        <div className="grid grid-cols-3 gap-4 md:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
           {media.map((m) => (
             <div key={m.id} className="group relative overflow-hidden rounded-lg ring-1 ring-slate-200">
-              <img src={m.url.startsWith('http') ? m.url : `${API_BASE}${m.url}`} className="h-24 w-full object-cover" />
-              <button onClick={() => remove(m.id)} className="absolute right-1 top-1 hidden rounded-full bg-red-600 p-1 text-white group-hover:block">
+              <img src={m.url} alt={m.alt_text || ''} className="h-24 w-full object-cover" />
+              <button onClick={() => remove(m.id)} aria-label="Delete image" className="absolute right-1 top-1 rounded-full bg-red-600 p-1.5 text-white shadow md:hidden md:group-hover:block">
                 <Trash2 size={12} />
               </button>
             </div>

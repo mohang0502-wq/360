@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-route
 import { useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import SmoothScroll from './components/SmoothScroll';
 import Home from './pages/Home';
 import Services from './pages/Services';
 import ManualEditing from './pages/ManualEditing';
@@ -13,6 +14,7 @@ import HowItWorks from './pages/HowItWorks';
 import Pricing from './pages/Pricing';
 import About from './pages/About';
 import Contact from './pages/Contact';
+import NotFound from './pages/NotFound';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import { isLoggedIn } from './services/cmsService';
@@ -24,13 +26,19 @@ function SiteMetadata() {
   useEffect(() => {
     document.title = `${site.site_name} — ${site.tagline}`;
     if (site.favicon_url) {
-      let favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
-      if (!favicon) {
-        favicon = document.createElement('link');
-        favicon.rel = 'icon';
-        document.head.appendChild(favicon);
-      }
-      favicon.href = site.favicon_url;
+      // Only swap in the CMS favicon once it actually loads; a missing upload
+      // keeps the bundled default instead of a broken icon.
+      const probe = new Image();
+      probe.onload = () => {
+        let favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+        if (!favicon) {
+          favicon = document.createElement('link');
+          favicon.rel = 'icon';
+          document.head.appendChild(favicon);
+        }
+        favicon.href = site.favicon_url!;
+      };
+      probe.src = site.favicon_url;
     }
   }, [site.site_name, site.tagline, site.favicon_url]);
 
@@ -54,11 +62,13 @@ function ScrollToTop() {
 
 function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <main className="flex-1">{children}</main>
-      <Footer />
-    </div>
+    <SmoothScroll>
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <main className="flex-1">{children}</main>
+        <Footer />
+      </div>
+    </SmoothScroll>
   );
 }
 
@@ -98,6 +108,7 @@ export default function App() {
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<Contact />} />
+                <Route path="*" element={<NotFound />} />
               </Routes>
             </Layout>
           }

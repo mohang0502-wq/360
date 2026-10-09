@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, ChevronDown, User, HelpCircle, Scissors } from 'lucide-react';
+import { Menu, X, ChevronDown, User, HelpCircle } from 'lucide-react';
 import { useSite } from '../hooks/useSite';
 
 const serviceLinks = [
@@ -146,9 +146,9 @@ export default function Navbar() {
               <Link to="/contact#faq" className="flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2 transition-colors">
                 <HelpCircle size={15} /> FAQ
               </Link>
-              <a href="#" className="flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2 transition-colors">
+              <Link to="/admin/login" className="flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 px-3 py-2 transition-colors">
                 <User size={15} /> Login
-              </a>
+              </Link>
               <Link to="/contact" className="text-sm font-bold text-slate-700 border border-slate-200 hover:border-slate-400 px-4 py-2 rounded-lg transition-colors">
                 Request a Quote
               </Link>

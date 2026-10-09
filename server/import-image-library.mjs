@@ -10,14 +10,16 @@ const supported = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif', '.tif', '.
 const importedSourcePaths = new Set();
 const naturalSort = (a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
 const slugify = (value) => value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-const publicUrl = (relativePath) => `/images/${relativePath.split(path.sep).map(encodeURIComponent).join('/')}`;
+// Keep '&' literal: some static servers (incl. Vite) don't decode %26 in file paths.
+const encodeSegment = (segment) => encodeURIComponent(segment).replace(/%26/g, '&');
+const publicUrl = (relativePath) => `/images/${relativePath.split(path.sep).map(encodeSegment).join('/')}`;
 const browserUrl = async (relativePath) => {
   const extension = path.extname(relativePath).toLowerCase();
   if (!['.tif', '.tiff'].includes(extension)) return publicUrl(relativePath);
   const generatedPath = relativePath.replace(/\.(tif|tiff)$/i, '.jpg');
   try {
     await fs.access(path.join(generatedRoot, generatedPath));
-    return `/generated-images/${generatedPath.split(path.sep).map(encodeURIComponent).join('/')}`;
+    return `/generated-images/${generatedPath.split(path.sep).map(encodeSegment).join('/')}`;
   } catch {
     return publicUrl(relativePath);
   }

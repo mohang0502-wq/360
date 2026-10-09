@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import BeforeAfterSlider from '../components/BeforeAfterSlider';
 import SectionHeader from '../components/SectionHeader';
-import { aiBeforeAfterPairs, bannerImages } from '../data/images';
+import { aiBeforeAfterPairs } from '../data/images';
+import { portfolioAiDefaults } from '../data/pageDefaults';
+import { useSections } from '../hooks/useSections';
 import { getPortfolio, type PortfolioItem } from '../services/cmsService';
 
 const fallbackAiGallery = aiBeforeAfterPairs;
@@ -16,6 +18,7 @@ const aiCategories = [
 ];
 
 export default function PortfolioAI() {
+  const { sections: pageCms } = useSections('portfolioAi', portfolioAiDefaults);
   const [liveItems, setLiveItems] = useState<PortfolioItem[]>([]);
 
   useEffect(() => {
@@ -31,8 +34,8 @@ export default function PortfolioAI() {
       {/* Banner */}
       <div className="relative h-56 bg-slate-deep overflow-hidden">
         <img
-          src={bannerImages.portfolio}
-          alt="AI Portfolio"
+          src={pageCms.banner.image}
+          alt={pageCms.banner.alt}
           className="absolute inset-0 w-full h-full object-cover opacity-15"
         />
         <div className="relative z-10 max-w-8xl mx-auto px-6 h-full flex flex-col justify-center">

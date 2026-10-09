@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle, ChevronDown, ChevronUp, Cpu } from 'lucide-react';
+import { ChevronDown, ChevronUp, Cpu } from 'lucide-react';
 import BeforeAfterSlider from '../components/BeforeAfterSlider';
-import FileUpload from '../components/FileUpload';
 import SectionHeader from '../components/SectionHeader';
-import { aiBeforeAfterPairs } from '../data/images';
 import { defaultCmsContent } from '../data/cms';
 import { useSections } from '../hooks/useSections';
+import { aiServicesDefaults } from '../data/pageDefaults';
 import { getServices, getPortfolio, type ServiceItem, type PortfolioItem } from '../services/cmsService';
 
 const aiServices = [
@@ -82,6 +81,7 @@ const iconMap = {
 };
 
 export default function AIServices() {
+  const { sections: pageCms } = useSections('aiServices', aiServicesDefaults);
   const { sections } = useSections('services', defaultCmsContent.services);
   const ai = sections.ai as typeof defaultCmsContent.services.ai;
 
@@ -95,7 +95,9 @@ export default function AIServices() {
 
   const aiCards = liveCards.length
     ? liveCards.map((c) => ({ title: c.title, description: c.description, details: c.description, image: c.image_url, use: c.items_json || [], icon: 'Sparkles' }))
-    : (ai.serviceCards.length ? ai.serviceCards : aiServices);
+    : (ai.serviceCards.length
+      ? ai.serviceCards
+      : aiServices.map((s) => ({ title: s.title, description: s.desc, details: s.details, image: s.img, use: s.use, icon: 'Sparkles' })));
 
   const aiShowcase = liveShowcase.length
     ? liveShowcase.map((p) => ({ before: p.before_image, after: p.after_image, caption: p.caption, category: p.category_name || 'AI' }))
@@ -106,8 +108,8 @@ export default function AIServices() {
       {/* Banner */}
       <div className="relative h-56 bg-slate-deep overflow-hidden">
         <img
-          src="https://images.unsplash.com/photo-1617922001439-4a2e6562f328?w=1400&q=80"
-          alt="AI Services"
+          src={pageCms.banner.image}
+          alt={pageCms.banner.alt}
           className="absolute inset-0 w-full h-full object-cover opacity-20"
         />
         <div className="relative z-10 max-w-8xl mx-auto px-6 h-full flex flex-col justify-center">

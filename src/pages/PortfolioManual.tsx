@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom';
 import { Filter, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import BeforeAfterSlider from '../components/BeforeAfterSlider';
 import SectionHeader from '../components/SectionHeader';
-import { beforeAfterPairs, bannerImages } from '../data/images';
+import { beforeAfterPairs } from '../data/images';
+import { portfolioManualDefaults } from '../data/pageDefaults';
+import { useSections } from '../hooks/useSections';
 import { getPortfolio, getCategories, categoryLabel, type PortfolioItem, type Category } from '../services/cmsService';
 
 const defaultCategories = ['All', 'Fashion', 'Product', 'Jewelry', 'Furniture'];
@@ -11,6 +13,7 @@ const defaultCategories = ['All', 'Fashion', 'Product', 'Jewelry', 'Furniture'];
 const fallbackGalleryItems = beforeAfterPairs;
 
 export default function PortfolioManual() {
+  const { sections: pageCms } = useSections('portfolioManual', portfolioManualDefaults);
   const [activeFilter, setActiveFilter] = useState('All');
   const [liveItems, setLiveItems] = useState<PortfolioItem[]>([]);
   const [liveCategories, setLiveCategories] = useState<Category[]>([]);
@@ -42,8 +45,8 @@ export default function PortfolioManual() {
       {/* Banner */}
       <div className="relative h-56 bg-slate-primary overflow-hidden">
         <img
-          src={bannerImages.portfolio}
-          alt="Manual Editing Portfolio"
+          src={pageCms.banner.image}
+          alt={pageCms.banner.alt}
           className="absolute inset-0 w-full h-full object-cover opacity-20"
         />
         <div className="relative z-10 max-w-8xl mx-auto px-6 h-full flex flex-col justify-center">

@@ -5,11 +5,11 @@ import {
   BarChart3, RefreshCw, CheckCircle, ChevronDown, ChevronUp, Clock
 } from 'lucide-react';
 import BeforeAfterSlider from '../components/BeforeAfterSlider';
-import FileUpload from '../components/FileUpload';
 import SectionHeader from '../components/SectionHeader';
-import { beforeAfterPairs, serviceImages, bannerImages } from '../data/images';
+import { serviceImages } from '../data/images';
 import { defaultCmsContent } from '../data/cms';
 import { useSections } from '../hooks/useSections';
+import { manualEditingDefaults } from '../data/pageDefaults';
 import { getServices, getPortfolio, type ServiceItem, type PortfolioItem } from '../services/cmsService';
 
 const services = [
@@ -132,6 +132,7 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 
 export default function ManualEditing() {
   const { sections } = useSections('services', defaultCmsContent.services);
+  const { sections: pageCms } = useSections('manualEditing', manualEditingDefaults);
   const manual = sections.manual as typeof defaultCmsContent.services.manual;
 
   const [liveCards, setLiveCards] = useState<ServiceItem[]>([]);
@@ -160,7 +161,7 @@ export default function ManualEditing() {
     <div>
       {/* Banner */}
       <div className="relative h-56 bg-slate-primary overflow-hidden">
-        <img src={bannerImages.services} alt="Manual Editing" className="absolute inset-0 w-full h-full object-cover opacity-20" />
+        <img src={pageCms.banner.image} alt={pageCms.banner.alt} className="absolute inset-0 w-full h-full object-cover opacity-20" />
         <div className="relative z-10 max-w-8xl mx-auto px-6 h-full flex flex-col justify-center">
           <nav className="flex items-center gap-2 text-xs text-white/40 mb-3">
             <Link to="/" className="hover:text-white/70">Home</Link>
@@ -300,8 +301,8 @@ export default function ManualEditing() {
             </div>
             <div className="rounded-2xl overflow-hidden">
               <img
-                src="https://images.unsplash.com/photo-1586717791821-3f44a563fa4c?w=800&q=80"
-                alt="Quality editing workspace"
+                src={pageCms.quality.image}
+                alt={pageCms.quality.alt}
                 className="w-full h-full object-cover"
               />
             </div>

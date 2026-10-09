@@ -1,102 +1,40 @@
-import { useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { motion, AnimatePresence, useScroll, useTransform, useSpring, useMotionValue, useReducedMotion } from 'framer-motion';
 import {
-  ArrowRight, CheckCircle, Star, ChevronDown, ChevronUp,
+  ArrowRight, ArrowUpRight, CheckCircle, Star,
   Scissors, Clock, Shield, RefreshCw, HeadphonesIcon,
-  Zap, Award, Users, BarChart3, Upload, ChevronLeft, ChevronRight,
-  Play
+  Award, Users, Quote, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 import BeforeAfterSlider from '../components/BeforeAfterSlider';
 import FileUpload from '../components/FileUpload';
-import SectionHeader from '../components/SectionHeader';
-import { beforeAfterPairs, serviceImages } from '../data/images';
+import {
+  Reveal, Stagger, staggerItem, SplitWords, Parallax,
+  Counter, ScrollProgress, LuxHeading, Marquee, Accordion, SmartImg, ease,
+} from '../components/Premium';
+import { ExpandOnScroll, HorizontalScroll, GsapBatch } from '../components/GsapEffects';
+import { homeDefaults } from '../data/pageDefaults';
 import { defaultCmsContent } from '../data/cms';
 import { useSections } from '../hooks/useSections';
-
-// ─── Apple Cards Carousel ───────────────────────────────────────────────────
-const trustCards = [
-  {
-    stat: '10K+',
-    label: 'Images Edited',
-    sub: 'Delivered with precision and care',
-    bg: 'from-slate-800 to-slate-900',
-    img: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=600&q=80',
-  },
-  {
-    stat: '120+',
-    label: 'Happy Clients',
-    sub: 'Brands, studios & agencies worldwide',
-    bg: 'from-slate-700 to-slate-800',
-    img: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&q=80',
-  },
-  {
-    stat: '4.9/5',
-    label: 'Average Rating',
-    sub: 'Consistently praised for quality',
-    bg: 'from-slate-800 to-slate-900',
-    img: 'https://images.unsplash.com/photo-1586717791821-3f44a563fa4c?w=600&q=80',
-  },
-  {
-    stat: '10+',
-    label: 'Years Experience',
-    sub: 'Decade of manual editing expertise',
-    bg: 'from-slate-700 to-slate-800',
-    img: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&q=80',
-  },
-  {
-    stat: '24hr',
-    label: 'Turnaround',
-    sub: 'Standard delivery on most projects',
-    bg: 'from-slate-900 to-slate-primary',
-    img: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600&q=80',
-  },
-  {
-    stat: '100%',
-    label: 'Satisfaction',
-    sub: 'We work until you are fully happy',
-    bg: 'from-slate-800 to-slate-900',
-    img: 'https://images.unsplash.com/photo-1547949003-9792a18a2601?w=600&q=80',
-  },
-];
-
-const manualServices = [
-  { icon: Scissors, label: 'Clipping Path', desc: 'Pixel-perfect cutouts with clean edges', img: serviceImages.clippingPath },
-  { icon: Shield, label: 'Background Removal', desc: 'Remove or replace backgrounds seamlessly', img: serviceImages.backgroundRemoval },
-  { icon: Award, label: 'Product Retouching', desc: 'Clean, sharp, flawless product images', img: serviceImages.productRetouching },
-  { icon: Star, label: 'High-End Retouching', desc: 'Natural skin, beauty & magazine quality', img: serviceImages.highEndRetouching },
-  { icon: Users, label: 'Ghost Mannequin', desc: 'Neck joint & realistic 3D look', img: serviceImages.ghostMannequin },
-  { icon: Zap, label: 'Jewelry Editing', desc: 'Brilliance, clarity & metal enhancement', img: serviceImages.jewelry },
-  { icon: BarChart3, label: 'Fashion Retouching', desc: 'Editorial quality apparel retouching', img: serviceImages.fashion },
-  { icon: RefreshCw, label: 'Furniture Editing', desc: 'Enhance colors, remove dust, perfect details', img: serviceImages.furniture },
-  { icon: CheckCircle, label: 'Color Correction', desc: 'Accurate, consistent color across images', img: serviceImages.colorCorrection },
-  { icon: Play, label: 'Shadow & Reflection', desc: 'Natural shadows and reflections added', img: serviceImages.shadow },
-];
+import { submitContact } from '../services/cmsService';
 
 const whyChoose = [
-  { icon: Scissors, title: 'Manual Expertise', desc: 'Skilled editors with years of hands-on experience' },
-  { icon: Award, title: 'Premium Quality', desc: 'Pixel-perfect and 100% hand-edited results' },
-  { icon: Clock, title: 'Fast Turnaround', desc: 'On-time delivery, always' },
-  { icon: Shield, title: 'Secure & Private', desc: 'Your images are safe with us' },
-  { icon: RefreshCw, title: 'Unlimited Revisions', desc: 'We work until you are 100% satisfied' },
-  { icon: HeadphonesIcon, title: '24/7 Support', desc: "We're here to help you anytime" },
+  { icon: Scissors, title: 'Manual Expertise', desc: 'Senior editors with years of hands-on craft — never batch automation.' },
+  { icon: Award, title: 'Premium Quality', desc: 'Pixel-perfect, 100% hand-edited results that meet luxury brand standards.' },
+  { icon: Clock, title: 'Fast Turnaround', desc: 'Dependable 24–48 hour delivery, with rush lanes for launches.' },
+  { icon: Shield, title: 'Secure & Private', desc: 'NDA-ready workflows and strict confidentiality for every asset.' },
+  { icon: RefreshCw, title: 'Unlimited Revisions', desc: 'We refine until every frame matches your vision.' },
+  { icon: HeadphonesIcon, title: '24/7 Support', desc: 'A dedicated account manager across every time zone.' },
 ];
 
 const manualWorkflowSteps = [
-  { num: '01', title: 'Receive Images & Brief', desc: 'Upload your images and share editing requirements' },
-  { num: '02', title: 'Review Requirements', desc: 'We analyze and plan the best editing approach' },
-  { num: '03', title: 'Manual Editing', desc: 'Expert editors work with precision and care' },
-  { num: '04', title: 'Internal QC', desc: 'Multi-level quality assurance checks' },
-  { num: '05', title: 'Client Review', desc: 'You review and approve the edited images' },
-  { num: '06', title: 'Revisions', desc: 'Free revisions until you are fully satisfied' },
-  { num: '07', title: 'Final Delivery', desc: 'Files delivered on time, every time' },
-];
-
-const aiServices = [
-  { label: 'AI Model Generation', desc: 'Create realistic models for your brand', img: 'https://images.unsplash.com/photo-1617922001439-4a2e6562f328?w=400&q=80' },
-  { label: 'AI Product Photography', desc: 'Stunning product photos from assets', img: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&q=80' },
-  { label: 'AI Background Creation', desc: 'Generate any background you imagine', img: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&q=80' },
-  { label: 'AI Lifestyle Images', desc: 'Create lifestyle scenes for marketing', img: 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=400&q=80' },
-  { label: 'AI Fashion Models', desc: 'Virtual fashion models for your products', img: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&q=80' },
+  { num: '01', title: 'Brief & Upload', desc: 'Share images, references and style guides.' },
+  { num: '02', title: 'Review', desc: 'We plan the ideal editing approach.' },
+  { num: '03', title: 'Manual Editing', desc: 'Experts retouch with precision and care.' },
+  { num: '04', title: 'Internal QC', desc: 'Multi-level senior quality assurance.' },
+  { num: '05', title: 'Client Review', desc: 'You review and approve every frame.' },
+  { num: '06', title: 'Revisions', desc: 'Refinements until fully satisfied.' },
+  { num: '07', title: 'Delivery', desc: 'Final files, on time, every time.' },
 ];
 
 const testimonials = [
@@ -123,109 +61,83 @@ const testimonials = [
 const faqs = [
   { q: 'What types of images do you edit?', a: 'We edit all types of product, fashion, jewelry, furniture, and e-commerce images. Our manual editing team handles everything from simple background removal to complex high-end retouching.' },
   { q: 'How long does editing take?', a: 'Standard turnaround is 24–48 hours for most projects. Rush delivery is available for time-sensitive orders. Larger volume projects will have custom timelines.' },
-  { q: 'Do you offer a free trial?', a: 'Yes! Send us 2–5 images and we\'ll provide a free sample edit with no obligation. Use the Free Trial form on this page to get started.' },
+  { q: 'Do you offer a free trial?', a: "Yes! Send us 2–5 images and we'll provide a free sample edit with no obligation. Use the Free Trial form on this page to get started." },
   { q: 'How many revisions do you provide?', a: 'We offer unlimited revisions until you are completely satisfied with the result. Your happiness is our priority.' },
   { q: 'Is my data and imagery secure?', a: 'Absolutely. We treat all client files with strict confidentiality. Your images are never shared or used without your explicit permission.' },
 ];
 
-const brands = ['ZARA', 'Amazon', 'Myntra', 'AJIO', 'IKEA', 'Nykaa', 'Snapdeal', 'ZARA', 'Amazon', 'Myntra', 'AJIO', 'IKEA', 'Nykaa', 'Snapdeal'];
+const brands = ['ZARA', 'Amazon', 'Myntra', 'AJIO', 'IKEA', 'Nykaa', 'Snapdeal'];
 
-const iconMap = {
-  Scissors,
-  Shield,
-  Award,
-  Star,
-  Users,
-};
-
-// ─── FAQ Item ────────────────────────────────────────────────────────────────
-function FAQItem({ q, a }: { q: string; a: string }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="border-b border-slate-100">
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between py-4 text-left"
-      >
-        <span className="text-sm font-semibold text-slate-800 pr-4">{q}</span>
-        {open ? <ChevronUp size={16} className="text-slate-500 flex-shrink-0" /> : <ChevronDown size={16} className="text-slate-500 flex-shrink-0" />}
-      </button>
-      {open && <p className="pb-4 text-sm text-slate-500 leading-relaxed">{a}</p>}
-    </div>
-  );
-}
-
-// ─── Apple Cards Carousel ────────────────────────────────────────────────────
-function AppleCardsCarousel() {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const scroll = (dir: 'left' | 'right') => {
-    if (!scrollRef.current) return;
-    scrollRef.current.scrollBy({ left: dir === 'left' ? -320 : 320, behavior: 'smooth' });
-  };
-
-  return (
-    <div className="relative">
-      <button
-        onClick={() => scroll('left')}
-        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-shadow"
-      >
-        <ChevronLeft size={18} className="text-slate-700" />
-      </button>
-      <div ref={scrollRef} className="apple-cards-scroll px-2">
-        {trustCards.map((card, i) => (
-          <div
-            key={i}
-            className={`apple-card w-72 h-48 rounded-2xl bg-gradient-to-br ${card.bg} overflow-hidden relative`}
-          >
-            <img src={card.img} alt={card.label} className="absolute inset-0 w-full h-full object-cover opacity-20" />
-            <div className="relative z-10 p-6 h-full flex flex-col justify-between">
-              <div className="text-4xl font-extrabold text-white">{card.stat}</div>
-              <div>
-                <div className="text-base font-bold text-white">{card.label}</div>
-                <div className="text-sm text-white/60 mt-1">{card.sub}</div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      <button
-        onClick={() => scroll('right')}
-        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-shadow"
-      >
-        <ChevronRight size={18} className="text-slate-700" />
-      </button>
-    </div>
-  );
-}
+const heroStats = [
+  { val: '10K+', label: 'Images edited' },
+  { val: '120+', label: 'Global brands' },
+  { val: '4.9/5', label: 'Client rating' },
+];
 
 // ─── Free Trial Form ─────────────────────────────────────────────────────────
 function FreeTrialForm() {
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent'>('idle');
+  const [error, setError] = useState('');
+
+  const send = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const v = Object.fromEntries(new FormData(form).entries()) as Record<string, string>;
+    setStatus('sending');
+    setError('');
+    try {
+      await submitContact({
+        name: v.name || '',
+        email: v.email || '',
+        company: '',
+        phone: '',
+        service: v.service || '',
+        message: [
+          'Free sample edit request',
+          v.volume ? `Approximate volume: ${v.volume}` : '',
+          v.sampleFiles ? `Sample files selected: ${v.sampleFiles}` : '',
+          v.sampleLink ? `Sample files link: ${v.sampleLink}` : '',
+          '',
+          v.notes || '(no instructions provided)',
+        ].filter((line, i) => line || i === 4).join('\n'),
+      });
+      form.reset();
+      setStatus('sent');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to send your request. Please try again.');
+      setStatus('idle');
+    }
+  };
+
+  if (status === 'sent') {
+    return (
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease }} className="py-10 text-center">
+        <span className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-ink text-white">
+          <CheckCircle size={28} />
+        </span>
+        <h4 className="text-2xl font-semibold text-ink">Request <span className="lux-serif text-accent-red">received.</span></h4>
+        <p className="mt-2 text-sm text-slate-500">We'll reply within 24 hours with next steps for your free sample edit.</p>
+        <button type="button" onClick={() => setStatus('idle')} className="lux-btn lux-btn-ghost mt-8">Send another request</button>
+      </motion.div>
+    );
+  }
+
   return (
-    <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1.5">Your Name *</label>
-          <input
-            type="text"
-            placeholder="Full name"
-            required
-            className="w-full px-4 py-3 text-sm border border-slate-200 rounded-lg bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-300 transition"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1.5">Email Address *</label>
-          <input
-            type="email"
-            placeholder="you@company.com"
-            required
-            className="w-full px-4 py-3 text-sm border border-slate-200 rounded-lg bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-300 transition"
-          />
-        </div>
+    <form className="space-y-5" onSubmit={send}>
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <label className="block">
+          <span className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500">Your Name *</span>
+          <input name="name" type="text" placeholder="Full name" required maxLength={150} autoComplete="name" className="lux-input" />
+        </label>
+        <label className="block">
+          <span className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500">Email Address *</span>
+          <input name="email" type="email" placeholder="you@company.com" required maxLength={255} autoComplete="email" className="lux-input" />
+        </label>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1.5">Service Required</label>
-          <select className="w-full px-4 py-3 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300 transition">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+        <label className="block">
+          <span className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500">Service Required</span>
+          <select name="service" className="lux-input">
             <option value="">Select a service...</option>
             <option>Clipping Path</option>
             <option>Background Removal</option>
@@ -239,10 +151,10 @@ function FreeTrialForm() {
             <option>AI Services</option>
             <option>Other</option>
           </select>
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-slate-600 mb-1.5">Approximate Volume</label>
-          <select className="w-full px-4 py-3 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-300 transition">
+        </label>
+        <label className="block">
+          <span className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500">Approximate Volume</span>
+          <select name="volume" className="lux-input">
             <option value="">Images per month...</option>
             <option>1–50 images</option>
             <option>50–200 images</option>
@@ -250,516 +162,712 @@ function FreeTrialForm() {
             <option>500–1000 images</option>
             <option>1000+ images</option>
           </select>
-        </div>
+        </label>
       </div>
       <div>
-        <label className="block text-xs font-semibold text-slate-600 mb-1.5">Upload Sample Images</label>
+        <span className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500">Sample Images</span>
         <FileUpload />
       </div>
-      <div>
-        <label className="block text-xs font-semibold text-slate-600 mb-1.5">Instructions / Reference Notes</label>
+      <label className="block">
+        <span className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-500">Instructions / Reference Notes</span>
         <textarea
+          name="notes"
           rows={3}
+          maxLength={4000}
           placeholder="Describe your requirements, style references, or any special instructions..."
-          className="w-full px-4 py-3 text-sm border border-slate-200 rounded-lg bg-white text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-300 transition resize-none"
+          className="lux-input resize-none"
         />
-      </div>
-      <button
-        type="submit"
-        className="w-full bg-accent-red hover:bg-accent-red-hover text-white font-bold py-3.5 rounded-lg transition-colors text-sm"
-      >
-        Send Free Trial Request
+      </label>
+      {error && <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</p>}
+      <button type="submit" disabled={status === 'sending'} className="lux-btn lux-btn-primary w-full justify-center disabled:opacity-60">
+        {status === 'sending' ? 'Sending…' : <>Send Free Trial Request <ArrowRight size={16} /></>}
       </button>
-      <p className="text-xs text-slate-400 text-center">No credit card required · No obligation · Quick 24-hour delivery</p>
+      <p className="text-center text-xs text-slate-400">No credit card required · No obligation · Quick 24-hour delivery</p>
     </form>
+  );
+}
+
+// ─── Hero ────────────────────────────────────────────────────────────────────
+function Hero({ hero, gallery }: { hero: typeof homeDefaults.hero; gallery: typeof homeDefaults.heroGallery }) {
+  const ref = useRef<HTMLElement>(null);
+  const reduce = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] });
+  const textY = useTransform(scrollYProgress, [0, 1], reduce ? [0, 0] : [0, 160]);
+  const visualY = useTransform(scrollYProgress, [0, 1], reduce ? [0, 0] : [0, -80]);
+  const fade = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
+
+  // Subtle mouse-follow tilt on the visual
+  const mx = useMotionValue(0);
+  const my = useMotionValue(0);
+  const rotateY = useSpring(useTransform(mx, [-0.5, 0.5], [-5, 5]), { stiffness: 100, damping: 20 });
+  const rotateX = useSpring(useTransform(my, [-0.5, 0.5], [4, -4]), { stiffness: 100, damping: 20 });
+
+  const [lead, tail] = hero.title.includes(' for ')
+    ? [hero.title.split(' for ')[0], 'for ' + hero.title.split(' for ')[1]]
+    : [hero.title, ''];
+
+  return (
+    <section ref={ref} className="lux-glow relative overflow-hidden">
+      <div className="lux-grid-lines pointer-events-none absolute inset-0" />
+      <motion.div
+        aria-hidden
+        animate={reduce ? undefined : { y: [0, -20, 0], x: [0, 10, 0] }}
+        transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
+        className="pointer-events-none absolute -left-40 top-20 h-[28rem] w-[28rem] rounded-full bg-[#C9A96E]/10 blur-3xl"
+      />
+      <div className="lux-container relative grid items-center gap-12 py-12 lg:min-h-[calc(100vh-110px)] lg:grid-cols-12 lg:py-10">
+        <motion.div style={{ y: textY, opacity: fade }} className="lg:col-span-6">
+          <motion.span
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease }}
+            className="mb-8 inline-flex items-center gap-3 rounded-full border border-hairline bg-white/70 px-4 py-2 text-xs font-semibold text-slate-600 backdrop-blur"
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-accent-red opacity-60" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-accent-red" />
+            </span>
+            {hero.eyebrow}
+          </motion.span>
+
+          <h1 className="text-[2.9rem] font-semibold leading-[1] tracking-[-0.045em] text-ink sm:text-6xl lg:text-[5.6rem]">
+            <SplitWords text={lead} delay={0.1} />
+            {tail && (
+              <>
+                <br />
+                <SplitWords text={tail} className="lux-serif text-accent-red" delay={0.35} />
+              </>
+            )}
+          </h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.9, delay: 0.6, ease }}
+            className="mt-8 max-w-lg text-lg leading-relaxed text-slate-500"
+          >
+            {hero.subtitle}
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.9, delay: 0.75, ease }}
+            className="mt-10 flex flex-wrap gap-3"
+          >
+            <Link to="/contact#trial" className="lux-btn lux-btn-primary">
+              {hero.ctaPrimary} <ArrowRight size={16} />
+            </Link>
+            <Link to="/portfolio" className="lux-btn lux-btn-ghost">
+              {hero.ctaSecondary}
+            </Link>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1, delay: 1 }}
+            className="mt-10 grid max-w-md grid-cols-3 divide-x divide-hairline border-t border-hairline pt-8"
+          >
+            {heroStats.map((s) => (
+              <div key={s.label} className="px-4 first:pl-0">
+                <Counter value={s.val} className="block text-3xl font-semibold tracking-tight text-ink" />
+                <span className="mt-1 block text-xs text-slate-400">{s.label}</span>
+              </div>
+            ))}
+          </motion.div>
+        </motion.div>
+
+        <motion.div
+          style={{ y: visualY }}
+          className="relative lg:col-span-6"
+          onMouseMove={(e) => {
+            const r = e.currentTarget.getBoundingClientRect();
+            mx.set((e.clientX - r.left) / r.width - 0.5);
+            my.set((e.clientY - r.top) / r.height - 0.5);
+          }}
+          onMouseLeave={() => { mx.set(0); my.set(0); }}
+        >
+          <motion.div
+            initial={reduce ? false : { opacity: 0, scale: 0.94, clipPath: 'inset(8% 8% 8% 8% round 2rem)' }}
+            animate={{ opacity: 1, scale: 1, clipPath: 'inset(0% 0% 0% 0% round 2rem)' }}
+            transition={{ duration: 1.4, delay: 0.2, ease }}
+            style={{ rotateX, rotateY, transformPerspective: 1200 }}
+            className="relative rounded-[2rem] border border-white bg-white p-3 shadow-[0_50px_100px_-40px_rgba(17,19,24,0.45)]"
+          >
+            <div className="overflow-hidden rounded-[1.5rem]">
+              <BeforeAfterSlider
+                beforeSrc={hero.beforeImage}
+                afterSrc={hero.afterImage}
+                beforeAlt={hero.beforeLabel}
+                afterAlt={hero.afterLabel}
+                caption="Professional Fashion Retouching"
+                aspectRatio="aspect-[4/3]"
+                zoomable={true}
+              />
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 1, delay: 1.1, ease }}
+            className="absolute -right-3 top-10 hidden rounded-2xl border border-hairline bg-white/90 px-5 py-4 shadow-xl backdrop-blur sm:block"
+          >
+            <div className="flex items-center gap-1">
+              {Array.from({ length: 5 }).map((_, i) => <Star key={i} size={12} className="fill-[#C9A96E] text-[#C9A96E]" />)}
+            </div>
+            <p className="mt-1.5 text-xs font-semibold text-ink">Rated 4.9 by 120+ brands</p>
+            <div className="mt-3 flex -space-x-2">
+              {gallery.avatars.slice(0, 4).map((avatar, i) => (
+                <SmartImg key={`${avatar.src}-${i}`} src={avatar.src} alt={avatar.alt} className="h-7 w-7 rounded-full border-2 border-white object-cover" />
+              ))}
+              <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-ink text-[9px] font-bold text-white">+120</span>
+            </div>
+          </motion.div>
+
+          {/* floating detail tile */}
+          <motion.div
+            initial={{ opacity: 0, y: -30, rotate: 8 }}
+            animate={{ opacity: 1, y: 0, rotate: 5 }}
+            transition={{ duration: 1.1, delay: 1, ease }}
+            className="absolute -top-8 left-6 hidden w-32 rounded-2xl border-[5px] border-white bg-white shadow-2xl xl:block"
+          >
+            <div className="aspect-[4/5] overflow-hidden rounded-xl">
+              <SmartImg src={gallery.detailImage.src} alt={gallery.detailImage.alt} className="h-full w-full object-cover" />
+            </div>
+            <p className="px-1 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">{gallery.detailLabel}</p>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 1.25, ease }}
+            className="absolute -bottom-6 -left-4 flex items-center gap-4 rounded-2xl bg-ink px-5 py-4 text-white shadow-2xl"
+          >
+            <span className="lux-serif text-4xl leading-none">100%</span>
+            <span className="text-xs leading-tight text-white/60">Hand-crafted<br />manual editing</span>
+          </motion.div>
+        </motion.div>
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.6 }}
+        className="absolute bottom-6 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-400 lg:flex"
+      >
+        Scroll
+        <span className="relative h-10 w-px overflow-hidden bg-hairline">
+          <motion.span
+            animate={{ y: ['-100%', '100%'] }}
+            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+            className="absolute inset-x-0 h-1/2 bg-ink"
+          />
+        </span>
+      </motion.div>
+    </section>
+  );
+}
+
+// ─── Process timeline with scroll-drawn line ─────────────────────────────────
+function Process() {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 80%', 'end 50%'] });
+  const scaleX = useSpring(scrollYProgress, { stiffness: 80, damping: 25 });
+
+  return (
+    <section className="bg-white py-16 lg:py-20">
+      <div className="lux-container">
+        <div className="mb-10 flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
+          <LuxHeading eyebrow="Our Process" title="A seven-step craft," highlight="refined over a decade." />
+          <Reveal>
+            <Link to="/how-it-works" className="lux-btn lux-btn-ghost flex-shrink-0">
+              How It Works <ArrowRight size={15} />
+            </Link>
+          </Reveal>
+        </div>
+
+        <div ref={ref} className="relative">
+          <div className="absolute left-0 right-0 top-6 hidden h-px bg-hairline lg:block" />
+          <motion.div style={{ scaleX }} className="absolute left-0 right-0 top-6 hidden h-px origin-left bg-ink lg:block" />
+          <Stagger className="grid grid-cols-2 gap-x-6 gap-y-12 sm:grid-cols-4 lg:grid-cols-7" gap={0.1}>
+            {manualWorkflowSteps.map((step) => (
+              <motion.div key={step.num} variants={staggerItem} className="group relative">
+                <div className="relative z-10 mb-6 flex h-12 w-12 items-center justify-center rounded-full border border-hairline bg-white text-xs font-bold text-ink transition-all duration-500 group-hover:scale-110 group-hover:border-ink group-hover:bg-ink group-hover:text-white">
+                  {step.num}
+                </div>
+                <h4 className="text-sm font-semibold text-ink">{step.title}</h4>
+                <p className="mt-2 text-xs leading-relaxed text-slate-500">{step.desc}</p>
+              </motion.div>
+            ))}
+          </Stagger>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Testimonials carousel ───────────────────────────────────────────────────
+function Testimonials() {
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setIndex((i) => (i + 1) % testimonials.length), 7000);
+    return () => clearInterval(id);
+  }, [index]);
+  const t = testimonials[index];
+
+  return (
+    <section className="relative overflow-hidden bg-sand py-16 lg:py-20">
+      <div className="lux-container">
+        <div className="grid gap-10 lg:grid-cols-12">
+          <div className="lg:col-span-4">
+            <LuxHeading eyebrow="Client Voices" title="Trusted by" highlight="120+ brands." />
+            <Reveal delay={0.2}>
+              <div className="mt-10 flex gap-3">
+                <button
+                  onClick={() => setIndex((index - 1 + testimonials.length) % testimonials.length)}
+                  className="flex h-12 w-12 items-center justify-center rounded-full border border-ink/15 bg-white text-ink transition-colors hover:bg-ink hover:text-white"
+                  aria-label="Previous testimonial"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <button
+                  onClick={() => setIndex((index + 1) % testimonials.length)}
+                  className="flex h-12 w-12 items-center justify-center rounded-full border border-ink/15 bg-white text-ink transition-colors hover:bg-ink hover:text-white"
+                  aria-label="Next testimonial"
+                >
+                  <ChevronRight size={18} />
+                </button>
+              </div>
+            </Reveal>
+          </div>
+          <div className="relative min-h-[20rem] lg:col-span-8">
+            <Quote size={64} className="absolute -top-4 left-0 text-[#C9A96E]/30" />
+            <AnimatePresence mode="wait">
+              <motion.figure
+                key={index}
+                initial={{ opacity: 0, y: 30, filter: 'blur(6px)' }}
+                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                exit={{ opacity: 0, y: -20, filter: 'blur(6px)' }}
+                transition={{ duration: 0.8, ease }}
+                className="relative pt-12"
+              >
+                <blockquote className="lux-serif text-3xl leading-[1.25] text-ink sm:text-4xl lg:text-[2.75rem]">
+                  “{t.quote}”
+                </blockquote>
+                <figcaption className="mt-10 flex items-center gap-4">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-ink text-sm font-semibold text-white">{t.name[0]}</span>
+                  <span>
+                    <span className="block text-sm font-semibold text-ink">{t.name}</span>
+                    <span className="block text-xs text-slate-500">{t.role}</span>
+                  </span>
+                  <span className="ml-auto flex gap-0.5">
+                    {Array.from({ length: t.rating }).map((_, i) => <Star key={i} size={14} className="fill-[#C9A96E] text-[#C9A96E]" />)}
+                  </span>
+                </figcaption>
+              </motion.figure>
+            </AnimatePresence>
+            <div className="mt-10 flex gap-2">
+              {testimonials.map((_, i) => (
+                <button key={i} onClick={() => setIndex(i)} className="h-1 flex-1 overflow-hidden rounded-full bg-ink/10" aria-label={`Testimonial ${i + 1}`}>
+                  {i === index && (
+                    <motion.span
+                      key={index}
+                      initial={{ width: '0%' }}
+                      animate={{ width: '100%' }}
+                      transition={{ duration: 7, ease: 'linear' }}
+                      className="block h-full bg-ink"
+                    />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 
 // ─── Main Home Page ──────────────────────────────────────────────────────────
 export default function Home() {
-  const { sections: home } = useSections('home', defaultCmsContent.home);
-  const cms = { home };
+  const { sections: home } = useSections('home', homeDefaults);
   const [showcaseFilter, setShowcaseFilter] = useState('All');
   const showcaseFilters = ['All', 'Fashion', 'Product', 'Jewelry', 'Furniture'];
   const filteredPairs = showcaseFilter === 'All'
-    ? cms.home.showcase
-    : cms.home.showcase.filter(p => p.category === showcaseFilter);
-
-  const hero = cms.home.hero;
-  const coreServices = cms.home.coreServices.map((svc) => {
-    const Icon = iconMap[svc.icon as keyof typeof iconMap] ?? Scissors;
-    return {
-      ...svc,
-      img: svc.image,
-      label: svc.title,
-      desc: svc.description,
-      icon: Icon,
-    };
-  });
+    ? home.showcase
+    : home.showcase.filter((p) => p.category === showcaseFilter);
+  const trustItems = home.trust?.items?.length ? home.trust.items : defaultCmsContent.home.trust.items;
 
   return (
-    <div>
-      {/* ── Section 1: Hero ─────────────────────────────────────────────── */}
-      <section className="bg-white min-h-[calc(100vh-120px)] flex items-center">
-        <div className="max-w-8xl mx-auto px-6 py-16 w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            {/* Left: Text */}
-            <div>
-              <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-500 mb-4">
-                <span className="w-6 h-px bg-slate-300" />
-                {hero.eyebrow}
-              </span>
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight text-slate-primary mb-6">
-                {hero.title.split(' for ')[0]}<br />
-                <span className="text-accent-red">{hero.title.includes(' for ') ? 'for ' + hero.title.split(' for ')[1] : 'for Every Image.'}</span>
-              </h1>
-              <p className="text-lg text-slate-500 leading-relaxed mb-8 max-w-lg">
-                {hero.subtitle}
+    <div className="bg-white">
+      <ScrollProgress />
+      <Hero hero={home.hero} gallery={home.heroGallery} />
+
+      {/* ── Brand marquee ─────────────────────────────────────────────────── */}
+      <section className="border-y border-hairline bg-white py-10">
+        <p className="mb-6 text-center text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-400">
+          Trusted by brands & studios worldwide
+        </p>
+        <Marquee items={brands} />
+      </section>
+
+      {/* ── Manifesto + stats ─────────────────────────────────────────────── */}
+      <section className="bg-white py-16 lg:py-20">
+        <div className="lux-container">
+          <div className="grid gap-10 lg:grid-cols-12">
+            <div className="lg:col-span-7">
+              <Reveal><span className="lux-eyebrow mb-8">Our Standard</span></Reveal>
+              <p className="text-3xl font-medium leading-[1.25] tracking-[-0.02em] text-ink sm:text-4xl lg:text-5xl">
+                <SplitWords text="Every image is a brand promise. We treat each one with" />{' '}
+                <SplitWords text="obsessive, human precision" className="lux-serif text-accent-red" delay={0.4} />{' '}
+                <SplitWords text="— at global scale." delay={0.6} />
               </p>
-              <div className="flex flex-wrap gap-3 mb-10">
-                <Link
-                  to="/contact#trial"
-                  className="inline-flex items-center gap-2 bg-accent-red hover:bg-accent-red-hover text-white font-bold px-6 py-3.5 rounded-lg transition-colors text-sm"
-                >
-                  {hero.ctaPrimary} <ArrowRight size={16} />
-                </Link>
-                <Link
-                  to="/portfolio"
-                  className="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-800 font-bold px-6 py-3.5 rounded-lg border border-slate-200 hover:border-slate-400 transition-colors text-sm"
-                >
-                  {hero.ctaSecondary}
-                </Link>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  'High-End Retouching',
-                  'Perfect Color & Tone',
-                  'Pixel Perfect Delivery',
-                  'On-Time, Every Time',
-                ].map((item) => (
-                  <div key={item} className="flex items-center gap-2 text-sm text-slate-600">
-                    <CheckCircle size={14} className="text-slate-400 flex-shrink-0" />
-                    {item}
-                  </div>
-                ))}
-              </div>
             </div>
-
-            {/* Right: Before/After Box */}
-            <div className="relative">
-              <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-2xl">
-                <BeforeAfterSlider
-                  beforeSrc={hero.beforeImage}
-                  afterSrc={hero.afterImage}
-                  beforeAlt={hero.beforeLabel}
-                  afterAlt={hero.afterLabel}
-                  caption="Professional Fashion Retouching"
-                  aspectRatio="aspect-[4/3]"
-                  zoomable={true}
-                />
-              </div>
-              <div className="absolute -bottom-4 -right-4 bg-slate-primary text-white rounded-xl px-4 py-3 text-xs font-semibold shadow-xl">
-                <div className="text-xl font-extrabold text-white">100%</div>
-                <div className="text-white/70">Manual editing</div>
-              </div>
-            </div>
+            <Stagger className="grid grid-cols-2 gap-px self-end overflow-hidden rounded-3xl border border-hairline bg-hairline lg:col-span-5">
+              {trustItems.slice(0, 4).map((item) => (
+                <motion.div key={item.label} variants={staggerItem} className="bg-white p-7">
+                  <Counter value={item.stat} className="block text-4xl font-semibold tracking-tight text-ink" />
+                  <span className="mt-2 block text-sm font-semibold text-ink">{item.label}</span>
+                  <span className="mt-1 block text-xs leading-relaxed text-slate-400">{item.sub}</span>
+                </motion.div>
+              ))}
+            </Stagger>
           </div>
         </div>
       </section>
 
-      {/* Brand ticker */}
-      <section className="bg-slate-primary py-5 overflow-hidden">
-        <div className="flex items-center gap-3 mb-2 max-w-8xl mx-auto px-6">
-          <span className="text-xs justify-center font-semibold text-white/40 uppercase tracking-widest whitespace-nowrap">Trusted by brands & studios worldwide</span>
-        </div>
-        <div className="ticker-wrap">
-          <div className="ticker-inner">
-            {[...brands, ...brands].map((b, i) => (
-              <span key={i} className="text-lg font-extrabold text-white/30 hover:text-white/60 transition-colors mx-8 tracking-wider">{b}</span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Section 2: Apple Cards Carousel ─────────────────────────────── */}
-      <section className="py-20 bg-off-white">
-        <div className="max-w-8xl mx-auto px-6">
-          <SectionHeader
-            eyebrow="Client Proof"
-            title="Trusted Results, "
-            highlight="Every Time"
-            subtitle="Numbers that reflect our commitment to quality, consistency, and client satisfaction."
-          />
-          <AppleCardsCarousel />
-        </div>
-      </section>
-
-      {/* ── Section 3: Manual Services ───────────────────────────────────── */}
-      <section className="py-20 bg-white">
-        <div className="max-w-8xl mx-auto px-6">
-          <SectionHeader
-            eyebrow="Manual Image Editing"
-            title="Core Editing "
-            highlight="Services"
-            subtitle="Human expertise, precision and visual judgment for flawless results — the foundation of everything we do."
-          />
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-10">
-            {coreServices.map((svc) => (
-              <div key={svc.label} className="card-hover rounded-xl overflow-hidden border border-slate-100 bg-white">
-                <div className="aspect-[4/3] overflow-hidden">
-                  <img src={svc.img} alt={svc.label} className="w-full h-full object-cover" />
-                </div>
-                <div className="p-3">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <svc.icon size={13} className="text-slate-500 flex-shrink-0" />
-                    <span className="text-xs font-bold text-slate-800">{svc.label}</span>
-                  </div>
-                  <p className="text-xs text-slate-500 leading-snug">{svc.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="text-center">
-            <Link
-              to="/services/manual-editing"
-              className="inline-flex items-center gap-2 text-sm font-bold text-slate-700 border border-slate-200 hover:border-slate-800 hover:bg-slate-50 px-6 py-3 rounded-lg transition-colors"
-            >
-              View All Manual Services <ArrowRight size={15} />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Section 4: Before/After Showcase ─────────────────────────────── */}
-      <section className="py-20 bg-slate-primary">
-        <div className="max-w-8xl mx-auto px-6">
-          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10">
-            <SectionHeader
-              eyebrow="Real Results"
-              title="Before / After "
-              highlight="Showcase"
-              subtitle="See the real transformation done by our professional manual editors."
-              centered={false}
-              light={true}
+      {/* ── Core services ─────────────────────────────────────────────────── */}
+      <section className="bg-ivory py-16 lg:py-20">
+        <div className="lux-container">
+          <div className="mb-10 flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
+            <LuxHeading
+              eyebrow="Manual Image Editing"
+              title="Core editing"
+              highlight="services."
+              subtitle="Human expertise, precision and visual judgment — the foundation of everything we do."
             />
-            <div className="flex flex-wrap gap-2 flex-shrink-0">
-              {showcaseFilters.map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setShowcaseFilter(f)}
-                  className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-colors ${
-                    showcaseFilter === f
-                      ? 'bg-white text-slate-900'
-                      : 'bg-white/10 text-white/60 hover:bg-white/20 hover:text-white'
-                  }`}
-                >
-                  {f}
-                </button>
+            <Reveal>
+              <Link to="/services/manual-editing" className="lux-btn lux-btn-ghost flex-shrink-0">
+                All Manual Services <ArrowRight size={15} />
+              </Link>
+            </Reveal>
+          </div>
+          <GsapBatch className="grid auto-rows-[15rem] grid-cols-1 gap-4 sm:grid-cols-2 lg:auto-rows-[16rem] lg:grid-cols-4">
+            {home.coreServices.map((svc, i) => (
+              <Link
+                key={svc.title}
+                data-batch
+                to="/services/manual-editing"
+                className={`lux-img-zoom group relative block overflow-hidden rounded-[1.75rem] bg-sand shadow-[0_24px_50px_-30px_rgba(17,19,24,0.45)] ${i === 0 ? 'sm:col-span-2 sm:row-span-2' : ''}`}
+              >
+                <SmartImg src={svc.image} alt={svc.title} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+                <div className="absolute inset-0 bg-gradient-to-t from-ink/85 via-ink/20 to-transparent transition-opacity duration-500 group-hover:from-ink/90" />
+                <span className="pointer-events-none absolute inset-0 rounded-[1.75rem] ring-1 ring-inset ring-white/10" />
+                <span className="absolute left-5 top-5 rounded-full border border-white/30 bg-white/15 px-3 py-1 text-[11px] font-bold tabular-nums text-white backdrop-blur-md">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <span className="absolute right-5 top-5 flex h-10 w-10 items-center justify-center rounded-full bg-white text-ink opacity-0 transition-all duration-500 group-hover:rotate-45 group-hover:opacity-100">
+                  <ArrowUpRight size={16} />
+                </span>
+                <div className="absolute inset-x-0 bottom-0 p-6">
+                  <h3 className={`font-semibold text-white ${i === 0 ? 'text-3xl sm:text-4xl' : 'text-lg'}`}>
+                    {i === 0 ? <span className="lux-serif">{svc.title}</span> : svc.title}
+                  </h3>
+                  <p className={`mt-1.5 text-sm leading-relaxed text-white/75 transition-all duration-500 ${i === 0 ? 'max-w-sm' : 'max-h-0 opacity-0 group-hover:max-h-20 group-hover:opacity-100'}`}>
+                    {svc.description}
+                  </p>
+                </div>
+              </Link>
+            ))}
+          </GsapBatch>
+        </div>
+      </section>
+
+      {/* ── Parallax statement band ───────────────────────────────────────── */}
+      <section className="relative bg-white py-6">
+        <div className="px-3 sm:px-5">
+          <ExpandOnScroll className="relative h-[78vh] min-h-[480px] w-full">
+            <SmartImg
+              data-expand-img
+              src={home.statement.image || home.hero.afterImage}
+              alt={home.statement.imageAlt}
+              className="absolute inset-0 h-full w-full object-cover"
+              loading="lazy"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-white/95 via-white/75 to-white/0" />
+            <div className="absolute bottom-8 right-8 hidden gap-3 lg:flex">
+              {home.statement.thumbnails.slice(0, 3).map((thumb, i) => (
+                <Reveal key={`${thumb.src}-${i}`} delay={0.2 + i * 0.1}>
+                  <div className="h-32 w-24 overflow-hidden rounded-2xl border-4 border-white shadow-xl">
+                    <SmartImg src={thumb.src} alt={thumb.alt} className="h-full w-full object-cover" loading="lazy" />
+                  </div>
+                </Reveal>
               ))}
             </div>
+            <div className="absolute inset-0 flex items-center">
+              <div className="max-w-xl px-8 sm:px-16">
+                <span className="lux-eyebrow mb-6">{home.statement.eyebrow}</span>
+                <h2 className="text-4xl font-semibold leading-[1.05] tracking-[-0.03em] text-ink sm:text-6xl">
+                  <SplitWords text="Every pixel," /> <br />
+                  <SplitWords text="considered." className="lux-serif text-accent-red" delay={0.2} />
+                </h2>
+                <Reveal delay={0.3}>
+                  <ul className="mt-8 space-y-3">
+                    {['High-end retouching', 'Perfect color & tone', 'Pixel-perfect delivery', 'On time, every time'].map((item) => (
+                      <li key={item} className="flex items-center gap-3 text-sm font-medium text-ink">
+                        <CheckCircle size={16} className="text-accent-red" /> {item}
+                      </li>
+                    ))}
+                  </ul>
+                </Reveal>
+              </div>
+            </div>
+          </ExpandOnScroll>
+        </div>
+      </section>
+
+      {/* ── Before / After showcase ───────────────────────────────────────── */}
+      <section className="bg-white py-16 lg:py-20">
+        <div className="lux-container">
+          <div className="mb-10 flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
+            <LuxHeading eyebrow="Real Results" title="Before & after," highlight="side by side." subtitle="Drag to reveal real transformations by our professional manual editors." />
+            <Reveal>
+              <div className="flex flex-wrap gap-1 rounded-full border border-hairline bg-ivory p-1">
+                {showcaseFilters.map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setShowcaseFilter(f)}
+                    className={`relative rounded-full px-4 py-2 text-xs font-semibold transition-colors ${showcaseFilter === f ? 'text-white' : 'text-slate-500 hover:text-ink'}`}
+                  >
+                    {showcaseFilter === f && (
+                      <motion.span layoutId="home-showcase-pill" className="absolute inset-0 rounded-full bg-ink" transition={{ duration: 0.5, ease }} />
+                    )}
+                    <span className="relative">{f}</span>
+                  </button>
+                ))}
+              </div>
+            </Reveal>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {filteredPairs.slice(0, 4).map((pair, i) => (
-              <BeforeAfterSlider
-                key={i}
-                beforeSrc={pair.before}
-                afterSrc={pair.after}
-                caption={pair.caption}
-                category={pair.category}
-                aspectRatio="aspect-[16/10]"
-                zoomable={true}
-              />
-            ))}
-          </div>
+          <motion.div layout className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <AnimatePresence mode="popLayout">
+              {filteredPairs.slice(0, 4).map((pair) => (
+                <motion.div
+                  key={pair.caption + pair.before}
+                  layout
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.96 }}
+                  transition={{ duration: 0.6, ease }}
+                  className="overflow-hidden rounded-[1.75rem] border border-hairline bg-white p-2 shadow-[0_30px_60px_-40px_rgba(17,19,24,0.35)]"
+                >
+                  <div className="overflow-hidden rounded-[1.35rem]">
+                    <BeforeAfterSlider
+                      beforeSrc={pair.before}
+                      afterSrc={pair.after}
+                      caption={pair.caption}
+                      category={pair.category}
+                      aspectRatio="aspect-[16/10]"
+                      zoomable={true}
+                    />
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
 
-          <div className="text-center mt-10">
-            <Link
-              to="/portfolio"
-              className="inline-flex items-center gap-2 bg-white hover:bg-off-white text-slate-900 font-bold px-6 py-3 rounded-lg transition-colors text-sm"
-            >
+          <Reveal className="mt-10 text-center">
+            <Link to="/portfolio" className="lux-btn lux-btn-primary">
               Explore All Work <ArrowRight size={15} />
             </Link>
-          </div>
+          </Reveal>
         </div>
       </section>
 
-      {/* ── Section 5: Why Choose ────────────────────────────────────────── */}
-      <section className="py-20 bg-white">
-        <div className="max-w-8xl mx-auto px-6">
-          <SectionHeader
-            eyebrow="Why Us"
-            title="Why Choose "
-            highlight="360° Retouching?"
-          />
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+      {/* ── Why choose ────────────────────────────────────────────────────── */}
+      <section className="bg-ivory py-16 lg:py-20">
+        <div className="lux-container">
+          <LuxHeading eyebrow="Why 360°" title="Built for brands that" highlight="refuse to compromise." align="center" className="mb-10" />
+          <Stagger className="grid grid-cols-1 gap-px overflow-hidden rounded-[2rem] border border-hairline bg-hairline sm:grid-cols-2 lg:grid-cols-3">
             {whyChoose.map((item) => (
-              <div key={item.title} className="text-center">
-                <div className="w-12 h-12 bg-slate-50 rounded-xl flex items-center justify-center mx-auto mb-3">
-                  <item.icon size={20} className="text-slate-700" />
-                </div>
-                <h4 className="text-sm font-bold text-slate-800 mb-1">{item.title}</h4>
-                <p className="text-xs text-slate-500 leading-snug">{item.desc}</p>
-              </div>
+              <motion.div key={item.title} variants={staggerItem} className="group relative bg-white p-10 transition-colors duration-500 hover:bg-ivory">
+                <span className="mb-8 flex h-14 w-14 items-center justify-center rounded-2xl border border-hairline bg-ivory text-ink transition-all duration-500 group-hover:-translate-y-1 group-hover:border-ink group-hover:bg-ink group-hover:text-white">
+                  <item.icon size={22} strokeWidth={1.6} />
+                </span>
+                <h4 className="text-lg font-semibold text-ink">{item.title}</h4>
+                <p className="mt-2 text-sm leading-relaxed text-slate-500">{item.desc}</p>
+                <span className="absolute bottom-0 left-0 h-[2px] w-0 bg-accent-red transition-all duration-700 group-hover:w-full" />
+              </motion.div>
             ))}
-          </div>
+          </Stagger>
         </div>
       </section>
 
-      {/* ── Section 6: How It Works Teaser ───────────────────────────────── */}
-      <section className="py-20 bg-off-white">
-        <div className="max-w-8xl mx-auto px-6">
-          <div className="flex flex-col lg:flex-row gap-10 items-start">
-            <div className="lg:w-64 flex-shrink-0">
-              <span className="text-xs font-bold uppercase tracking-widest text-slate-400 block mb-3">Our Simple Process</span>
-              <h2 className="text-3xl font-extrabold text-slate-primary mb-3">How It Works</h2>
-              <p className="text-sm text-slate-500 mb-6">Step-by-step workflow for smooth and reliable service.</p>
-              <Link
-                to="/how-it-works"
-                className="inline-flex items-center gap-2 text-sm font-bold text-slate-700 border border-slate-200 hover:border-slate-800 px-5 py-2.5 rounded-lg transition-colors"
-              >
-                Learn More <ArrowRight size={14} />
+      <Process />
+
+      {/* ── Portfolio teaser with offset parallax columns ─────────────────── */}
+      <section className="overflow-hidden bg-ivory py-16 lg:py-20">
+        <div className="lux-container">
+          <div className="mb-10 flex flex-col justify-between gap-8 lg:flex-row lg:items-end">
+            <LuxHeading eyebrow="Our Portfolio" title="Work across" highlight="every category." subtitle="High-quality results for every industry we serve." />
+            <Reveal>
+              <Link to="/portfolio" className="lux-btn lux-btn-ghost flex-shrink-0">
+                View Portfolio <ArrowRight size={15} />
               </Link>
-            </div>
-            <div className="flex-1">
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-4">
-                {manualWorkflowSteps.map((step, i) => (
-                  <div key={step.num} className="relative">
-                    <div className="text-center">
-                      <div className="w-10 h-10 bg-slate-primary rounded-full flex items-center justify-center mx-auto mb-2">
-                        <span className="text-xs font-extrabold text-white">{step.num}</span>
-                      </div>
-                      <h4 className="text-xs font-bold text-slate-800 leading-snug mb-1">{step.title}</h4>
-                      <p className="text-xs text-slate-500 leading-tight hidden lg:block">{step.desc}</p>
+            </Reveal>
+          </div>
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 lg:gap-6">
+            {home.portfolioCategories.items.map((cat, i) => (
+              <Parallax key={cat.label} offset={i % 3 === 1 ? 60 : 20} className={i % 3 === 1 ? 'lg:mt-16' : ''}>
+                <Link to="/portfolio" className="lux-img-zoom group relative block aspect-[3/4] overflow-hidden rounded-[1.75rem]">
+                  <SmartImg src={cat.image} alt={cat.alt || cat.label} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/0 to-transparent" />
+                  <div className="absolute inset-x-0 bottom-0 flex items-end justify-between p-6">
+                    <div>
+                      <p className="lux-serif text-3xl text-white sm:text-4xl">{cat.label}</p>
+                      <p className="mt-1 text-xs font-medium text-white/70">{cat.count} Projects</p>
                     </div>
-                    {i < manualWorkflowSteps.length - 1 && (
-                      <div className="hidden lg:block absolute top-5 left-1/2 right-0 h-px bg-slate-200 -translate-y-1/2 w-full" />
-                    )}
+                    <span className="flex h-11 w-11 translate-y-3 items-center justify-center rounded-full bg-white text-ink opacity-0 transition-all duration-500 group-hover:translate-y-0 group-hover:opacity-100">
+                      <ArrowUpRight size={16} />
+                    </span>
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Section 7: Portfolio Teaser ──────────────────────────────────── */}
-      <section className="py-20 bg-white">
-        <div className="max-w-8xl mx-auto px-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 mb-10">
-            <SectionHeader
-              eyebrow="Our Portfolio"
-              title="Explore Our "
-              highlight="Best Work"
-              subtitle="High-quality results for every industry and category."
-              centered={false}
-            />
-            <Link
-              to="/portfolio"
-              className="flex-shrink-0 inline-flex items-center gap-2 text-sm font-bold text-slate-700 border border-slate-200 hover:border-slate-800 px-5 py-2.5 rounded-lg transition-colors"
-            >
-              View Portfolio <ArrowRight size={14} />
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            {[
-              { label: 'Fashion Editing', count: '120+', img: 'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=400&q=80' },
-              { label: 'Jewelry Editing', count: '80+', img: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400&q=80' },
-              { label: 'Product Editing', count: '150+', img: 'https://images.unsplash.com/photo-1547949003-9792a18a2601?w=400&q=80' },
-              { label: 'Furniture Editing', count: '70+', img: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&q=80' },
-              { label: 'eCommerce Editing', count: '200+', img: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&q=80' },
-              { label: 'Retouching', count: '90+', img: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=400&q=80' },
-            ].map((cat) => (
-              <Link
-                key={cat.label}
-                to="/portfolio"
-                className="card-hover group relative rounded-xl overflow-hidden aspect-[3/4]"
-              >
-                <img src={cat.img} alt={cat.label} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent" />
-                <div className="absolute bottom-0 inset-x-0 p-3">
-                  <p className="text-xs font-bold text-white">{cat.label}</p>
-                  <p className="text-xs text-white/60">{cat.count} Projects</p>
-                </div>
-              </Link>
+                </Link>
+              </Parallax>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Section 8: AI Services ───────────────────────────────────────── */}
-      <section className="py-20 bg-slate-deep">
-        <div className="max-w-8xl mx-auto px-6">
-          <div className="flex flex-col lg:flex-row gap-10 items-start">
-            <div className="lg:w-80 flex-shrink-0">
-              <span className="inline-block text-xs font-semibold uppercase tracking-widest text-white/40 mb-3">AI Powered Solutions</span>
-              <h2 className="text-3xl font-extrabold text-white mb-3">
-                AI <span className="text-slate-400">Services</span>
-              </h2>
-              <p className="text-sm text-white/50 mb-6 leading-relaxed">
-                Smarter content creation with advanced AI technology — a secondary service that complements our primary manual editing work.
-              </p>
-              <Link
-                to="/services/ai-services"
-                className="inline-flex items-center gap-2 text-sm font-semibold text-white/70 hover:text-white border border-white/20 hover:border-white/40 px-5 py-2.5 rounded-lg transition-colors"
-              >
-                Explore AI Services <ArrowRight size={14} />
-              </Link>
-            </div>
-            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {aiServices.map((svc) => (
-                <div key={svc.label} className="rounded-xl overflow-hidden bg-white/5 border border-white/10 card-hover">
-                  <div className="aspect-video overflow-hidden">
-                    <img src={svc.img} alt={svc.label} className="w-full h-full object-cover opacity-70" />
-                  </div>
-                  <div className="p-4">
-                    <span className="inline-block px-2 py-0.5 bg-white/10 text-white/50 text-xs font-semibold rounded-full mb-2">AI Generated</span>
-                    <h4 className="text-sm font-bold text-white">{svc.label}</h4>
-                    <p className="text-xs text-white/50 mt-1">{svc.desc}</p>
-                  </div>
-                </div>
-              ))}
+      {/* ── AI services (GSAP pinned horizontal scroll) ───────────────────── */}
+      <HorizontalScroll
+        header={
+          <div className="lux-container">
+            <div className="mb-8 flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+              <LuxHeading
+                eyebrow="AI-Powered Solutions"
+                title="Intelligent content,"
+                highlight="human-curated."
+                subtitle="A complementary service to our manual craft — AI imagery reviewed and refined by our editors."
+              />
+              <Reveal>
+                <Link to="/services/ai-services" className="lux-btn lux-btn-ghost flex-shrink-0">
+                  Explore AI Services <ArrowRight size={15} />
+                </Link>
+              </Reveal>
             </div>
           </div>
-        </div>
-      </section>
+        }
+      >
+        {home.aiServices.items.map((svc, i) => (
+          <div key={svc.label} className={`w-[78vw] flex-shrink-0 sm:w-[20rem] lg:w-[24rem] ${i % 2 ? 'lg:mt-12' : ''}`}>
+            <div className="lux-img-zoom group relative aspect-[4/5] overflow-hidden rounded-[1.75rem] bg-sand shadow-[0_30px_60px_-35px_rgba(17,19,24,0.5)]">
+              <SmartImg src={svc.image} alt={svc.alt || svc.label} className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+              <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-transparent to-transparent" />
+              <span className="absolute left-4 top-4 rounded-full border border-white/30 bg-white/15 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-md">
+                AI Generated
+              </span>
+              <span className="lux-serif absolute right-5 top-3 text-5xl text-white/40">{String(i + 1).padStart(2, '0')}</span>
+              <div className="absolute inset-x-0 bottom-0 p-6">
+                <h4 className="text-xl font-semibold text-white">{svc.label}</h4>
+                <p className="mt-1 text-sm text-white/70">{svc.desc}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+        <Link
+          to="/services/ai-services"
+          className="group flex aspect-[4/5] w-[60vw] flex-shrink-0 flex-col items-center justify-center rounded-[1.75rem] border border-dashed border-ink/20 bg-ivory text-center sm:w-[16rem] lg:w-[18rem]"
+        >
+          <span className="flex h-16 w-16 items-center justify-center rounded-full bg-ink text-white transition-transform duration-500 group-hover:rotate-45">
+            <ArrowUpRight size={22} />
+          </span>
+          <span className="lux-serif mt-6 text-3xl text-ink">See all</span>
+          <span className="mt-1 text-xs text-slate-500">AI services</span>
+        </Link>
+      </HorizontalScroll>
 
-      {/* ── Section 9: Free Trial Form ───────────────────────────────────── */}
-      <section id="trial" className="py-20 bg-off-white scroll-mt-20">
-        <div className="max-w-8xl mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-            <div>
-              <SectionHeader
-                eyebrow="Free Trial"
-                title="Get a Free "
-                highlight="Sample Edit"
-                subtitle="Send us 2–5 images and receive a professionally edited sample with no obligation."
-                centered={false}
+      <Testimonials />
+
+      {/* ── Free trial ────────────────────────────────────────────────────── */}
+      <section id="trial" className="scroll-mt-20 bg-white py-16 lg:py-20">
+        <div className="lux-container">
+          <div className="grid items-start gap-10 lg:grid-cols-12">
+            <div className="lg:sticky lg:top-32 lg:col-span-5">
+              <LuxHeading
+                eyebrow="Complimentary Trial"
+                title="Experience the"
+                highlight="360° standard."
+                subtitle="Send us 2–5 images and receive a professionally edited sample — no obligation."
               />
-              <div className="space-y-4 mt-6">
+              <Stagger className="mt-10 space-y-4">
                 {[
                   { icon: CheckCircle, text: 'No credit card required' },
                   { icon: Clock, text: 'Quick 24-hour delivery' },
                   { icon: Shield, text: '100% free, no obligation' },
-                  { icon: RefreshCw, text: 'Covers any of our manual editing services' },
+                  { icon: Users, text: 'Covers any of our manual editing services' },
                 ].map(({ icon: Icon, text }) => (
-                  <div key={text} className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Icon size={15} className="text-slate-600" />
-                    </div>
-                    <span className="text-sm text-slate-600">{text}</span>
-                  </div>
+                  <motion.div key={text} variants={staggerItem} className="flex items-center gap-4">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full border border-hairline bg-ivory">
+                      <Icon size={16} className="text-ink" />
+                    </span>
+                    <span className="text-sm font-medium text-slate-600">{text}</span>
+                  </motion.div>
                 ))}
+              </Stagger>
+            </div>
+            <Reveal className="lg:col-span-7">
+              <div className="rounded-[2rem] border border-hairline bg-ivory p-6 shadow-[0_40px_80px_-50px_rgba(17,19,24,0.35)] sm:p-10">
+                <h3 className="mb-8 text-xl font-semibold text-ink">Request your free sample edit</h3>
+                <FreeTrialForm />
               </div>
-            </div>
-            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-8">
-              <h3 className="text-lg font-bold text-slate-800 mb-6">Request Your Free Sample Edit</h3>
-              <FreeTrialForm />
-            </div>
+            </Reveal>
           </div>
         </div>
       </section>
 
-      {/* ── Section 10: Testimonials ─────────────────────────────────────── */}
-      <section className="py-20 bg-white">
-        <div className="max-w-8xl mx-auto px-6">
-          <SectionHeader
-            eyebrow="What Our Clients Say"
-            title="Trusted by 120+ "
-            highlight="Brands Worldwide"
-          />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            {testimonials.map((t) => (
-              <div key={t.name} className="bg-off-white rounded-xl p-6 border border-slate-100">
-                <div className="flex gap-0.5 mb-4">
-                  {Array.from({ length: t.rating }).map((_, i) => (
-                    <Star key={i} size={13} className="fill-amber-400 text-amber-400" />
-                  ))}
-                </div>
-                <p className="text-sm text-slate-600 leading-relaxed mb-5 italic">"{t.quote}"</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 bg-slate-200 rounded-full flex items-center justify-center text-xs font-bold text-slate-600">
-                    {t.name[0]}
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-800">{t.name}</p>
-                    <p className="text-xs text-slate-500">{t.role}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-primary rounded-2xl p-6">
-            {[
-              { val: '10K+', label: 'Images Retouched' },
-              { val: '120+', label: 'Happy Clients' },
-              { val: '4.9/5', label: 'Average Rating' },
-              { val: '10+', label: 'Years Experience' },
-            ].map((stat) => (
-              <div key={stat.label} className="text-center py-2">
-                <div className="text-2xl font-extrabold text-white">{stat.val}</div>
-                <div className="text-xs text-white/50 mt-1">{stat.label}</div>
-              </div>
-            ))}
+      {/* ── FAQ ───────────────────────────────────────────────────────────── */}
+      <section id="faq" className="bg-ivory py-16 lg:py-20">
+        <div className="lux-container">
+          <div className="grid gap-10 lg:grid-cols-12">
+            <div className="lg:col-span-4">
+              <LuxHeading eyebrow="FAQ" title="Questions," highlight="answered." />
+              <Reveal delay={0.2}>
+                <p className="mt-6 text-sm text-slate-500">
+                  Can't find your answer?{' '}
+                  <Link to="/contact" className="font-semibold text-ink underline decoration-accent-red underline-offset-4">Contact us</Link>.
+                </p>
+              </Reveal>
+            </div>
+            <Reveal className="lg:col-span-8">
+              <Accordion items={faqs} />
+            </Reveal>
           </div>
         </div>
       </section>
 
-      {/* ── Section 11: FAQ ──────────────────────────────────────────────── */}
-      <section className="py-20 bg-off-white" id="faq">
-        <div className="max-w-8xl mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            <div>
-              <SectionHeader
-                eyebrow="FAQ"
-                title="Frequently Asked "
-                highlight="Questions"
-                centered={false}
-              />
-              <p className="text-sm text-slate-500 mb-4">
-                Can't find your answer? <Link to="/contact" className="text-slate-800 underline">Contact us</Link>.
-              </p>
-            </div>
-            <div className="divide-y divide-slate-100 bg-white rounded-xl p-6 border border-slate-100">
-              {faqs.map((f) => <FAQItem key={f.q} {...f} />)}
-              <div className="pt-4">
-                <Link
-                  to="/contact"
-                  className="inline-flex items-center gap-2 text-sm font-bold text-slate-700 hover:text-slate-900"
-                >
-                  View All FAQs <ArrowRight size={14} />
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Section 12: Final CTA ─────────────────────────────────────────── */}
-      <section className="py-20 bg-slate-primary">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <span className="text-xs font-bold uppercase tracking-widest text-white/40 block mb-4">Get Started Today</span>
-          <h2 className="text-4xl font-extrabold text-white mb-4">
-            Ready for Professional<br />Image Editing?
+      {/* ── Final CTA ─────────────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden bg-white py-20 lg:py-24">
+        <div className="lux-grid-lines pointer-events-none absolute inset-0" />
+        <div className="lux-container relative text-center">
+          <Reveal><span className="lux-eyebrow mb-8">Get Started Today</span></Reveal>
+          <h2 className="mx-auto max-w-4xl text-5xl font-semibold leading-[1] tracking-[-0.045em] text-ink sm:text-7xl lg:text-[6.5rem]">
+            <SplitWords text="Ready for" /> <SplitWords text="flawless" className="lux-serif text-accent-red" delay={0.15} /> <SplitWords text="imagery?" delay={0.25} />
           </h2>
-          <p className="text-lg text-white/60 mb-8 max-w-xl mx-auto">
-            Join 120+ brands who trust 360° Retouching for precision manual editing. Start with a free trial — no credit card needed.
-          </p>
-          <div className="flex flex-wrap gap-3 justify-center mb-12">
-            <Link
-              to="/contact#trial"
-              className="inline-flex items-center gap-2 bg-accent-red hover:bg-accent-red-hover text-white font-bold px-8 py-4 rounded-lg transition-colors"
-            >
-              Get a Free Trial <ArrowRight size={16} />
-            </Link>
-            <Link
-              to="/contact"
-              className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white font-bold px-8 py-4 rounded-lg transition-colors border border-white/20"
-            >
-              Request a Quote
-            </Link>
-          </div>
-
+          <Reveal delay={0.3}>
+            <p className="mx-auto mt-8 max-w-xl text-lg text-slate-500">
+              Join 120+ brands who trust 360° Retouching for precision manual editing. Start with a free trial — no credit card needed.
+            </p>
+            <div className="mt-12 flex flex-wrap justify-center gap-3">
+              <Link to="/contact#trial" className="lux-btn lux-btn-primary">
+                Get a Free Trial <ArrowRight size={16} />
+              </Link>
+              <Link to="/contact" className="lux-btn lux-btn-ghost">
+                Request a Quote
+              </Link>
+            </div>
+          </Reveal>
         </div>
       </section>
     </div>

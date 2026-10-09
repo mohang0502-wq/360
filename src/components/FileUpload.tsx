@@ -92,9 +92,12 @@ export default function FileUpload({ dropboxLink = true }: FileUploadProps) {
               or <span className="underline text-slate-700">click to browse</span> — JPG, PNG, TIFF, PSD, ZIP accepted
             </p>
           </div>
-          <p className="text-xs text-slate-400">Max 50MB per file · Client-side preview only</p>
+          <p className="text-xs text-slate-400">File names are included in your request — share the files via a link below, or we will reply with a secure upload link.</p>
         </div>
       </div>
+
+      {/* Names of the chosen files travel with the form submission. */}
+      <input type="hidden" name="sampleFiles" value={files.map((f) => f.name).join(", ")} />
 
       {/* File list */}
       {files.length > 0 && (
@@ -143,6 +146,7 @@ export default function FileUpload({ dropboxLink = true }: FileUploadProps) {
           </div>
           <input
             type="url"
+            name="sampleLink"
             value={dropboxUrl}
             onChange={(e) => setDropboxUrl(e.target.value)}
             placeholder="Or paste a Dropbox / Google Drive / WeTransfer link..."

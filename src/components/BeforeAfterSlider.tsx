@@ -13,6 +13,12 @@ interface BeforeAfterSliderProps {
   aspectRatio?: string;
 }
 
+// A missing file (e.g. a deleted upload) shows the neutral container
+// background instead of the browser's broken-image icon.
+const hideBrokenImage = (e: React.SyntheticEvent<HTMLImageElement>) => {
+  e.currentTarget.style.visibility = 'hidden';
+};
+
 function SliderCore({
   beforeSrc,
   afterSrc,
@@ -77,6 +83,7 @@ function SliderCore({
           alt={beforeAlt}
           className="w-full h-full object-contain bg-slate-100"
           draggable={false}
+          onError={hideBrokenImage}
         />
       </div>
 
@@ -85,7 +92,7 @@ function SliderCore({
         className="ba-slider-after"
         ref={(el) => { if (el) el.style.clipPath = `inset(0 0 0 ${sliderPos}%)`; }}
       >
-        <img src={afterSrc} alt={afterAlt} draggable={false} className="object-contain bg-slate-100" />
+        <img src={afterSrc} alt={afterAlt} draggable={false} className="object-contain bg-slate-100" onError={hideBrokenImage} />
       </div>
 
       {/* Labels */}

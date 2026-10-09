@@ -10,7 +10,7 @@ export default function Footer() {
     { label: 'Instagram', url: site.instagram, Icon: FaInstagram },
     { label: 'LinkedIn', url: site.linkedin, Icon: FaLinkedinIn },
     { label: 'YouTube', url: site.youtube, Icon: FaYoutube },
-  ].filter((link) => link.url);
+  ].filter((link) => /^https?:\/\/./i.test(link.url || '')); // skip empty or "#" placeholders
 
   return (
     <footer className="bg-slate-primary text-white">
@@ -106,7 +106,7 @@ export default function Footer() {
               </li>
               <li className="flex items-start gap-2">
                 <Mail size={13} className="text-white/90 mt-0.5 flex-shrink-0" />
-                <a href={`mailto:${site.email}`} className="text-sm text-white/80 hover:text-white transition-colors">{site.email}</a>
+                <a href={`mailto:${site.email}`} className="min-w-0 text-sm text-white/80 hover:text-white transition-colors [overflow-wrap:anywhere]">{site.email}</a>
               </li>
               <li className="flex items-start gap-2">
                 <MapPin size={13} className="text-white/90 mt-0.5 flex-shrink-0" />

@@ -3,9 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { login } from '../../services/cmsService';
 
 export default function AdminLogin() {
-  const [username, setUsername] = useState('admin');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState(
+    new URLSearchParams(window.location.search).get('expired') ? 'Your session has expired. Please log in again.' : '',
+  );
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -39,6 +41,8 @@ export default function AdminLogin() {
             <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Username</label>
             <input
               value={username}
+              required
+              autoComplete="username"
               onChange={(e) => setUsername(e.target.value)}
               className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm outline-none ring-0 focus:border-slate-400"
             />
@@ -48,6 +52,8 @@ export default function AdminLogin() {
             <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Password</label>
             <input
               type="password"
+              required
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 text-sm outline-none ring-0 focus:border-slate-400"
