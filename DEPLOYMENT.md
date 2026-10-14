@@ -23,7 +23,7 @@ Copy `.env.example` to `.env` on the server and fill it in. Required in producti
 | `NODE_ENV=production` | Enables production safeguards |
 | `JWT_SECRET` | ≥ 32 random characters — the API will not start without it |
 | `CORS_ORIGIN` | Your site origin(s), e.g. `https://360retouching.com,https://www.360retouching.com` |
-| `VITE_API_URL` | Public API URL. **Read at build time** — rebuild the frontend after changing it |
+| `VITE_API_URL` | Optional. Leave **empty** when nginx proxies `/api` and `/uploads` on the same domain (the frontend then calls its own origin). If set, it must be an **https** URL — an `http://` IP is blocked by browsers on an https site. Read at build time: rebuild after changing it |
 
 Optional: `SMTP_*`, `SMTP_FROM`, `CONTACT_TO` for contact-form email notifications. Without them enquiries are still saved and visible in **Admin → Inquiries**.
 

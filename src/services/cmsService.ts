@@ -4,7 +4,25 @@
 // export for pages not yet wired to live sections (see loadCmsContent()).
 import { defaultCmsContent, type CmsContent } from '../data/cms';
 
-export const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://localhost:4000';
+// API location:
+//  - VITE_API_URL if set at build time (e.g. "https://360retouching.com").
+//  - Otherwise: localhost:4000 in dev, and the site's own origin in production
+//    (nginx proxies /api and /uploads to the Node server).
+// An https page can never call a plain-http API (browsers block it as mixed
+// content and fetch fails with "Cannot reach the server"), so an http:// base
+// on an https page falls back to the same origin.
+function resolveApiBase(): string {
+  const env = (import.meta as any).env ?? {};
+  const configured = String(env.VITE_API_URL || '').trim().replace(/\/+$/, '');
+  const fallback = env.DEV ? 'http://localhost:4000' : '';
+  const base = configured || fallback;
+  if (typeof window !== 'undefined' && window.location.protocol === 'https:' && base.startsWith('http://')) {
+    return '';
+  }
+  return base;
+}
+
+export const API_BASE = resolveApiBase();
 const TOKEN_KEY = '360-admin-token';
 
 export type Category = {
